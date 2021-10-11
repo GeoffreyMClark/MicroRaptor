@@ -6,14 +6,15 @@ import sys
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-import streamlit.components.v1 as components
+# from bolt import Bolt
 import brax
-from brax import envs
+# from brax import envs
+import custom_envs
 from brax.training import ppo, sac
 from brax.io import html as html
 
 
-env_fn = envs.create_fn(env_name="bolt")
+env_fn = custom_envs.create_fn(env_name="bolt")
 env = env_fn()
 jit_env_reset = jax.jit(env.reset)
 state = jit_env_reset(rng=jax.random.PRNGKey(seed=0))
