@@ -145,8 +145,8 @@ bodies {
   name: "base_link"
   colliders {
       capsule {
-          radius: 0.3
-          length: 0.24
+          radius: 0.09
+          length: 0.32
       }
       rotation {
           x: -90.0
@@ -159,72 +159,7 @@ bodies {
     y: 1.0
     z: 1.0
   }
-  mass: 1.0
-}
-bodies {
-  name: "FL_SHOULDER"
-  colliders {
-      capsule {
-          radius: 0.04,
-          length: 0.06
-      }
-      rotation {
-          x: 0.08
-      }
-      position {
-          x: 0.35
-          y: -0.35
-          z: -0.15
-      }
-  }
-  inertia {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-  }
-  mass: 1.0
-}
-bodies {
-  name: "FL_UPPER_LEG"
-  colliders {
-      capsule {
-          radius: 0.01
-          length: 1
-      }
-      position {
-          x: 0.35
-          y: 0.30
-      }
-      rotation {
-      }
-  }
-  inertia {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-  }
-  mass: 1.0
-}
-bodies {
-  name: "FL_LOWER_LEG"
-  colliders {
-      capsule {
-          radius: 0.01
-          length: 1
-      }
-      position {
-          x: 0.35
-          y: -1.30
-      }
-      rotation{
-      }
-  }
-  inertia {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-  }
-  mass: 2.0
+  mass: 6.6161942
 }
 bodies {
   name: "FR_SHOULDER"
@@ -234,12 +169,11 @@ bodies {
           length: 0.06
       }
       rotation {
-          x: -0.08
+          y: 90.0
       }
       position {
-          x: -0.35
-          y: -0.35
-          z: -0.15
+          y: -0.13
+          z: -0.07
       }
   }
   inertia {
@@ -247,18 +181,41 @@ bodies {
     y: 1.0
     z: 1.0
   }
-  mass: 1.0
+  mass: 4.751751
+}
+bodies {
+  name: "FL_SHOULDER"
+  colliders {
+      capsule {
+          radius: 0.04,
+          length: 0.06
+      }
+      rotation {
+          y: 90.0
+      }
+      position {
+          y: 0.13
+          z: -0.07
+      }
+  }
+  inertia {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  mass: 4.751751
 }
 bodies {
   name: "FR_UPPER_LEG"
   colliders {
       capsule {
-          radius: 0.01
-          length: 1
+          radius: 0.018
+          length: 0.3
       }
       position {
-          x: -0.35
-          y: 0.30
+          y: -0.18
+          z: -0.200
+          x: -0.001
       }
   }
   inertia {
@@ -266,20 +223,45 @@ bodies {
     y: 1.0
     z: 1.0
   }
-  mass: 1.0
+  mass: 4.751751
+}
+bodies {
+  name: "FL_UPPER_LEG"
+  colliders {
+    position {
+        y: 0.18
+        z: -0.200
+        x: -0.001
+    }
+    rotation {
+  
+    }
+    capsule {
+      radius: 0.018
+      length: 0.3
+    }
+  }
+  inertia {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  mass: 4.751751
 }
 bodies {
   name: "FR_LOWER_LEG"
   colliders {
       capsule {
-          radius: 0.01
-          length: 1
+          radius: 0.015
+          length: 0.3
       }
       position {
-          x: -0.35
-          y: -1.30
+        x: 0  
+        y: -0.21
+        z: -0.45
       }
       rotation{
+        
       }
   }
   inertia {
@@ -287,7 +269,31 @@ bodies {
     y: 1.0
     z: 1.0
   }
-  mass: 2.0
+  mass: 4.5228419
+}
+bodies {
+  name: "FL_LOWER_LEG"
+  colliders {
+    position {
+      x: 0 
+      y: 0.21
+      z: -0.45
+    }
+    rotation {
+      
+    }
+    capsule {
+      radius: 0.018
+      length: 0.3
+    }
+  }
+
+  inertia {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  mass: 4.5228419
 }
 bodies {
   name: "floor"
@@ -306,464 +312,191 @@ bodies {
   }
 }
 joints {
-  name: "FL_HAA"
-  stiffness: 10000.0
+  name: "l_base_shoulder_joint"
+  stiffness: 8000.0
   parent: "base_link"
   child: "FL_SHOULDER"
   parent_offset {
-    y: 0.0636
-  }
-  rotation {
-      y: -90.0
-  }
-  angular_damping: 10.0
-  angle_limit {
-      min: -35
-      max: 35
-  }
-  limit_strength: 300.0
-  spring_damping: 50.0
-}
-joints {
-  name: "FL_HFE"
-  stiffness: 10000.0
-  parent: "FL_SHOULDER"
-  child: "FL_UPPER_LEG"
-  parent_offset {
-    y: 0.0145
-    z: -0.0386
-  }
-  rotation {
-      y: -90.0
-  }
-  angular_damping: 10.0
-  angle_limit {
-      min: -360
-      max: 360
-  }
-  limit_strength: 300.0
-  spring_damping: 50.0
-}
-joints {
-  name: "FL_KFE"
-  stiffness: 10000.0
-  parent: "FL_UPPER_LEG"
-  child: "FL_LOWER_LEG"
-  parent_offset {
-    y: 0.0374
-    z: -0.2
+ 
   }
   rotation {
   }
-  angular_damping: 10.0
+  
   angle_limit {
-    min: -360
-    max: 360
+      min: -360.0
+      max: 360.0
   }
-  limit_strength: 300.0
-  spring_damping: 50.0
+  limit_strength: 2000.0
+  angular_damping: 20.0
 }
 joints {
-  name: "FR_HAA"
-  stiffness: 10000.0
+  name: "r_base_shoulder_joint"
+  stiffness: 8000.0
   parent: "base_link"
   child: "FR_SHOULDER"
   parent_offset {
-    y: -0.0636
+
   }
   rotation {
   }
-  angular_damping: 10.0
+  
   angle_limit {
-      min: -35
-      max: 35
+      min: -360.0
+      max: 360.0
   }
-  limit_strength: 300.0
-  spring_damping: 50.0
+  limit_strength: 2000.0
+  angular_damping: 20.0
 }
 joints {
-  name: "FR_HFE"
-  stiffness: 10000.0
+  name: "l_shoulder_upperleg_joint"
+  stiffness: 8000.0
+  parent: "FL_SHOULDER"
+  child: "FL_UPPER_LEG"
+  parent_offset {
+    
+  }
+  child_offset{
+  }
+  rotation{
+    x: 90.0
+  }
+  angle_limit {
+    min: -360.0
+    max: 360.0
+  }
+  
+  limit_strength: 2000.0
+  angular_damping: 20.0
+}
+joints {
+  name: "r_shoulder_upperleg_joint"
+  stiffness: 8000.0
   parent: "FR_SHOULDER"
   child: "FR_UPPER_LEG"
   parent_offset {
-    y: -0.0145
-    z: -0.0386
+ 
   }
   rotation {
+    x: 90.0
   }
-  angular_damping: 10.0
   angle_limit {
-    min: -360
-    max: 360
+    min: -360.0
+    max: 360.0
   }
   limit_strength: 300.0
-  spring_damping: 50.0
+  angular_damping: 20.0
 }
 joints {
-  name: "FR_KFE"
-  stiffness: 10000.0
+  name: "l_knee_joint"
+  stiffness: 8000.0
+  parent: "FL_UPPER_LEG"
+  child: "FL_LOWER_LEG"
+  parent_offset {
+
+  }
+  child_offset {
+      
+  }
+  rotation {
+    x: 90.0
+  }
+  angle_limit {
+    min: -360.0
+    max: 360.0
+  }
+  angular_damping: 20.0
+}
+joints {
+  name: "r_knee_joint"
+  stiffness: 8000.0
   parent: "FR_UPPER_LEG"
   child: "FR_LOWER_LEG"
   parent_offset {
-    y: -0.0374
-    z: -0.2
+
+  }
+  child_offset {
   }
   rotation {
+    x: 90.0
   }
-  angular_damping: 10.0
   angle_limit {
-    min: -360
-    max: 360
+    min: -360.0
+    max: 360.0
   }
-  limit_strength: 300.0
-  spring_damping: 50.0
+  angular_damping: 20.0
 }
 actuators {
-  name: "FL_HAA"
-  joint: "FL_HAA"
-  strength: 100.0
+  name: "l_base_shoulder_joint"
+  joint: "l_base_shoulder_joint"
+  strength: 300.0
   torque {
   }
 }
 actuators {
-  name: "FL_HFE"
-  joint: "FL_HFE"
-  strength: 100.0
+  name: "l_shoulder_upperleg_joint"
+  joint: "l_shoulder_upperleg_joint"
+  strength: 300.0
   torque {
   }
 }
 actuators {
-  name: "FL_KFE"
-  joint: "FL_KFE"
-  strength: 100.0
+  name: "l_knee_joint"
+  joint: "l_knee_joint"
+  strength: 300.0
   torque {
   }
 }
 actuators {
-  name: "FR_HAA"
-  joint: "FR_HAA"
-  strength: 100.0
+  name: "r_base_shoulder_joint"
+  joint: "r_base_shoulder_joint"
+  strength: 300.0
   torque {
   }
 }
 actuators {
-  name: "FR_HFE"
-  joint: "FR_HFE"
-  strength: 100.0
+  name: "r_shoulder_upperleg_joint"
+  joint: "r_shoulder_upperleg_joint"
+  strength: 300.0
   torque {
   }
 }
 actuators {
-  name: "FR_KFE"
-  joint: "FR_KFE"
-  strength: 100.0
+  name: "r_knee_joint"
+  joint: "r_knee_joint"
+  strength: 300.0
   torque {
   }
 }
-friction: 0.6
+
+
+defaults {
+    angles {
+        name: "l_knee_joint"
+        angle {x: 0 y: 0 z: 0}
+    }
+    angles{
+        name: "r_knee_joint"
+        angle {x: 0 y: 0 z: 0}
+    }
+}
+
+collide_include {
+  first: "floor"
+  second: "FL_LOWER_LEG"
+}
+collide_include {
+  first: "floor"
+  second: "FR_LOWER_LEG"
+}
+friction: -0.6
+gravity {
+  z: -9.81
+}
 angular_damping: -0.05
 baumgarte_erp: 0.1
-collide_include {
-}
-dt: 0.02
-substeps: 4
-
+dt: 0.015
+substeps: 8
 """
 
-# _SYSTEM_CONFIG = """
-# bodies {
-#   name: "pelvis"
-#   colliders {
-#     position {
-#       x: 0.000
-#     }
-#     rotation {
-#       x: -90.0
-#     }
-#     capsule {
-#       radius: 0.058
-#       length: 0.170
-#     }
-#   }
-#   inertia {
-#     x: 1.0
-#     y: 1.0
-#     z: 1.0
-#   }
-#   mass: 6.6161942
-# }
-# bodies {
-#   name: "right_thigh"
-#   colliders {
-#     position {
-#       y: 0.000
-#       z: -0.100
-#     }
-#     rotation {
-#       x: -178.31532
-#     }
-#     capsule {
-#       radius: 0.030
-#       length: 0.200
-#     }
-#   }
-#   inertia {
-#     x: 1.0
-#     y: 1.0
-#     z: 1.0
-#   }
-#   mass: 4.751751
-# }
-# bodies {
-#   name: "right_shin"
-#   colliders {
-#     position {
-#       z: 0.100
-#       y: -0.00
-#     }
-#     rotation {
-#       x: -180.0
-#     }
-#     capsule {
-#       radius: 0.02
-#       length: 0.200
-#       end: -1
-#     }
-#   }
-#   colliders {
-#     position {
-#       z: -0.00
-#     }
-#     capsule {
-#       radius: 0.025
-#       length: 0.025
-#       end: 1
-#     }
-#   }
-#   inertia {
-#     x: 1.0
-#     y: 1.0
-#     z: 1.0
-#   }
-#   mass: 4.5228419
-# }
-# bodies {
-#   name: "left_thigh"
-#   colliders {
-#     position {
-#       y: -0.000
-#       z: -0.100
-#     }
-#     rotation {
-#       x: 178.31532
-#     }
-#     capsule {
-#       radius: 0.030
-#       length: 0.200
-#     }
-#   }
-#   inertia {
-#     x: 1.0
-#     y: 1.0
-#     z: 1.0
-#   }
-#   mass: 4.751751
-# }
-# bodies {
-#   name: "left_shin"
-#   colliders {
-#     position {
-#       z: -0.15
-#     }
-#     rotation {
-#       x: -180.0
-#     }
-#     capsule {
-#       radius: 0.02
-#       length: 0.398
-#       end: -1
-#     }
-#   }
-#   colliders {
-#     position {
-#       z: -0.35
-#     }
-#     capsule {
-#       radius: 0.025
-#       length: 0.025
-#       end: 1
-#     }
-#   }
-#   inertia {
-#     x: 1.0
-#     y: 1.0
-#     z: 1.0
-#   }
-#   mass: 4.5228419
-# }
-# bodies {
-#   name: "floor"
-#   colliders {
-#     plane {
-#     }
-#   }
-#   inertia {
-#     x: 1.0
-#     y: 1.0
-#     z: 1.0
-#   }
-#   mass: 1.0
-#   frozen { all: true }
-# }
-# joints {
-#   name: "right_hip_x"
-#   stiffness: 8000.0
-#   parent: "pelvis"
-#   child: "right_thigh"
-#   parent_offset {
-#     y: -0.1
-#     z: -0.04
-#   }
-#   child_offset {
-#   }
-#   rotation {
-#   }
-#   angular_damping: 20.0
-#   limit_strength: 2000.0
-#   angle_limit {
-#     min: -10.0
-#     max: 10.0
-#   }
-#   angle_limit {
-#     min: -30.0
-#     max: 70.0
-#   }
-#   angle_limit {
-#     min: -10.0
-#     max: 10.0
-#   }
-# }
-# joints {
-#   name: "right_knee"
-#   stiffness: 15000.0
-#   parent: "right_thigh"
-#   child: "right_shin"
-#   parent_offset {
-#     y: 0.01
-#     z: -0.383
-#   }
-#   child_offset {
-#     z: 0.02
-#   }
-#   rotation {
-#     z: -90.0
-#   }
-#   angular_damping: 20.0
-#   angle_limit {
-#     min: -160.0
-#     max: -2.0
-#   }
-# }
-# joints {
-#   name: "left_hip_x"
-#   stiffness: 8000.0
-#   parent: "pelvis"
-#   child: "left_thigh"
-#   parent_offset {
-#     y: 0.1
-#     z: -0.04
-#   }
-#   child_offset {
-#   }
-#   angular_damping: 20.0
-#   limit_strength: 2000.0
-#   angle_limit {
-#     min: -10.0
-#     max: 10.0
-#   }
-#   angle_limit {
-#     min: -30.0
-#     max: 70.0
-#   }
-#   angle_limit {
-#     min: -10.0
-#     max: 10.0
-#   }
-# }
-# joints {
-#   name: "left_knee"
-#   stiffness: 15000.0
-#   parent: "left_thigh"
-#   child: "left_shin"
-#   parent_offset {
-#     y: -0.01
-#     z: -0.383
-#   }
-#   child_offset {
-#     z: 0.02
-#   }
-#   rotation {
-#     z: -90.0
-#   }
-#   angular_damping: 20.0
-#   angle_limit {
-#     min: -160.0
-#     max: -2.0
-#   }
-# }
-# actuators {
-#   name: "right_hip_x"
-#   joint: "right_hip_x"
-#   strength: 300.0
-#   torque {
-#   }
-# }
-# actuators {
-#   name: "right_knee"
-#   joint: "right_knee"
-#   strength: 300.0
-#   torque {
-#   }
-# }
-# actuators {
-#   name: "left_hip_x"
-#   joint: "left_hip_x"
-#   strength: 300.0
-#   torque {
-#   }
-# }
-# actuators {
-#   name: "left_knee"
-#   joint: "left_knee"
-#   strength: 300.0
-#   torque {
-#   }
-# }
-# collide_include {
-#   first: "floor"
-#   second: "left_shin"
-# }
-# collide_include {
-#   first: "floor"
-#   second: "right_shin"
-# }
-# defaults {
-#   angles {
-#     name: "left_knee"
-#     angle { x: 45 y: 0 z: 0 }
-#   }
-#   angles {
-#     name: "right_knee"
-#     angle { x: 45 y: 0 z: 0 }
-#   }
-# }
-# friction: 1.0
-# gravity {
-#   z: -9.81
-# }
-# angular_damping: -0.05
-# baumgarte_erp: 0.1
-# dt: 0.015
-# substeps: 8
-# """
+
+

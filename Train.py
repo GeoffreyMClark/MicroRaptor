@@ -14,21 +14,18 @@ from brax.training import ppo, sac
 from brax.io import html as html
 
 
+# Create environment
 env_fn = custom_envs.create_fn(env_name="bolt")
 env = env_fn()
 jit_env_reset = jax.jit(env.reset)
 state = jit_env_reset(rng=jax.random.PRNGKey(seed=0))
 
+# visualization function
 def visualize(sys, qps):
     """Renders a 3D visualization of the environment."""
     html.save_html("test_file_1",sys,qps)
     wb.get('firefox').open("test_file_1")
 
-visualize(env.sys, [state.qp])
-
-
-
-# We determined some reasonable hyperparameters offline and share them here.
 train_fn = {
   functools.partial(
       ppo.train, num_timesteps = 30000000, log_frequency = 20,
@@ -39,11 +36,7 @@ train_fn = {
   )
 }
 
-max_y = 6000
-xdata = []
-ydata = []
-times = [datetime.now()]
-
+max_y = 6000; min_y = 10; xdata = []; ydata = []; times = [datetime.now()]
 def progress(num_steps, metrics):
   times.append(datetime.now())
   xdata.append(num_steps)
@@ -55,9 +48,13 @@ def progress(num_steps, metrics):
   plt.plot(xdata, ydata)
   plt.show()
 
-inference_fn, params, _ = train_fn(environment_fn=env_fn, progress_fn=progress)
 
-print(f'time to jit: {times[1] - times[0]}')
-print(f'time to train: {times[-1] - times[1]}')
+if __name__=='__main__':
 
-pass
+  visualize(env.sys, [state.qp])
+  inference_fn, params, _ = train_fn(environment_fn=env_fn, progress_fn=progress)
+
+  print(f'time to jit: {times[1] - times[0]}')
+  print(f'time to train: {times[-1] - times[1]}')
+
+  pass
