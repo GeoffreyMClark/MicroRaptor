@@ -5,6 +5,7 @@ import os
 import reverb
 import tempfile
 import PIL.Image
+import cv2
 
 import tensorflow as tf
 
@@ -36,7 +37,7 @@ tempdir = tempfile.gettempdir()
 
 # Use "num_iterations = 1e6" for better results (2 hrs)
 # 1e5 is just so this doesn't take too long (1 hr)
-num_iterations = 100000 # @param {type:"integer"}
+num_iterations = 500000 # @param {type:"integer"}
 
 initial_collect_steps = 10000 # @param {type:"integer"}
 collect_steps_per_iteration = 1 # @param {type:"integer"}
@@ -55,7 +56,7 @@ reward_scale_factor = 1.0 # @param {type:"number"}
 actor_fc_layer_params = (256, 256)
 critic_joint_fc_layer_params = (256, 256)
 
-log_interval = 5000 # @param {type:"integer"}
+log_interval = 1000 # @param {type:"integer"}
 
 num_eval_episodes = 20 # @param {type:"integer"}
 eval_interval = 10000 # @param {type:"integer"}
@@ -63,25 +64,27 @@ eval_interval = 10000 # @param {type:"integer"}
 policy_save_interval = 5000 # @param {type:"integer"}
 
 
-env = CassieEnv()
-env.reset()
-# PIL.Image.fromarray(env.render())
+# env = CassieEnv()
+# env.reset()
+
 
 
 gym_env = CassieEnv()
 env = suite_gym.wrap_env(gym_env)
 collect_env = suite_gym.wrap_env(gym_env)
 eval_env = suite_gym.wrap_env(gym_env)
+display_env = suite_gym.wrap_env(gym_env)
 # collect_env = tf_py_environment.TFPyEnvironment(train_py_env)
 # eval_env = tf_py_environment.TFPyEnvironment(eval_py_env)
+
+# PIL.Image.fromarray(collect_env.ren   der())
 
 print('Observation Spec:')
 print(collect_env.time_step_spec().observation)
 print('Action Spec:')
 print(collect_env.action_spec())
 
-use_gpu = True
-strategy = strategy_utils.get_strategy(tpu=False, use_gpu=use_gpu)
+strategy = strategy_utils.get_strategy(tpu=False, use_gpu=True)
 
 observation_spec, action_spec, time_step_spec = (spec_utils.get_tensor_specs(collect_env))
 
@@ -242,6 +245,22 @@ log_eval_metrics(0, metrics)
 
 
 
+def show_policy(environment, policy, num_episodes=3):
+  for _ in range(num_episodes):
+    time_step = environment.reset()
+    episode_return = 0.0
+    while not time_step.is_last():
+      raw = environment.render(mode='rgb_array')
+      cv2.imshow("Cassie Display",raw)
+      cv2.waitKey(1)
+
+      action_step = policy.action(time_step)
+      time_step = environment.step(action_step.action)
+      episode_return += time_step.reward
+
+
+
+
 
 
 # Reset the train step
@@ -250,6 +269,8 @@ tf_agent.train_step_counter.assign(0)
 # Evaluate the agent's policy once before training.
 avg_return = get_eval_metrics()["AverageReturn"]
 returns = [avg_return]
+
+show_policy(display_env, eval_actor.policy, num_episodes=3)
 
 for _ in range(num_iterations):
   # Training.
@@ -266,6 +287,13 @@ for _ in range(num_iterations):
 
   if log_interval and step % log_interval == 0:
     print('step = {0}: loss = {1}'.format(step, loss_info.loss.numpy()))
+    show_policy(display_env, eval_actor.policy, num_episodes=3)
+
+
+
+
+
+    
 
 rb_observer.close()
 reverb_server.stop()

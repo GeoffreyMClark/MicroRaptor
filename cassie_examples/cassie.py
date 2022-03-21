@@ -88,14 +88,14 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         done = self.done
         
 
-        forward_cost = np.abs(x_velocity)*10
-        sideways_cost = np.abs(y_velocity)*10
-        ctrl_cost = self.control_cost(action)*1000
-        # contact_cost = self.contact_cost
+        forward_cost = np.abs(xy_position_after[0])*50
+        sideways_cost = np.abs(xy_position_after[1])*50
+        ctrl_cost = self.control_cost(action)
+        contact_cost = self.contact_cost
         healthy_reward = self.healthy_reward
-        reward = healthy_reward - forward_cost - sideways_cost - ctrl_cost
+        reward = healthy_reward - forward_cost - sideways_cost
         if done:
-            reward -= 5000
+            reward = 0
 
         observation = self._get_obs()
         info = {
@@ -131,12 +131,17 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         noise_low = -self._reset_noise_scale
         noise_high = self._reset_noise_scale
 
-        qpos = self.init_qpos + self.np_random.uniform(
-            low=noise_low, high=noise_high, size=self.model.nq
-        )
-        qvel = self.init_qvel + self._reset_noise_scale * self.np_random.randn(
-            self.model.nv
-        )
+        # qpos = self.init_qpos + self.np_random.uniform(low=noise_low, high=noise_high, size=self.model.nq)
+        qpos = np.asarray([  1.00000390e-04,  1.10453331e-05,  9.89611245e-01,  9.99999981e-01,
+                            -1.50645122e-06, -1.93453798e-04, -1.53469430e-09,  6.83438358e-02,
+                            -8.57605285e-05,  6.21365611e-01,  9.56814499e-01, -1.53944178e-02,
+                                2.70039519e-02, -2.89032546e-01, -1.37987287e+00,  3.22283275e-03,
+                                1.59371586e+00,  6.91569992e-04, -1.59253155e+00,  1.57410108e+00,
+                            -1.69989113e+00, -6.83816099e-02,  8.50431551e-05,  6.21366577e-01,
+                                9.55578531e-01, -5.09970882e-02, -6.89472086e-03, -2.90209289e-01,
+                            -1.37987225e+00,  3.22283929e-03,  1.59371522e+00,  6.91570380e-04,
+                            -1.59253155e+00,  1.57410108e+00, -1.69989113e+00])
+        qvel = self.init_qvel + self._reset_noise_scale * self.np_random.randn(self.model.nv)
         self.set_state(qpos, qvel)
 
         observation = self._get_obs()
