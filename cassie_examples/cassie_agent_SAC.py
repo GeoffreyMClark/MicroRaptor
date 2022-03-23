@@ -37,7 +37,7 @@ tempdir = tempfile.gettempdir()
 
 # Use "num_iterations = 1e6" for better results (2 hrs)
 # 1e5 is just so this doesn't take too long (1 hr)
-num_iterations = 500000 # @param {type:"integer"}
+num_iterations = 5000000 # @param {type:"integer"}
 
 initial_collect_steps = 10000 # @param {type:"integer"}
 collect_steps_per_iteration = 1 # @param {type:"integer"}
@@ -45,9 +45,9 @@ replay_buffer_capacity = 10000 # @param {type:"integer"}
 
 batch_size = 256 # @param {type:"integer"}
 
-critic_learning_rate = 3e-4 # @param {type:"number"}
-actor_learning_rate = 3e-4 # @param {type:"number"}
-alpha_learning_rate = 3e-4 # @param {type:"number"}
+critic_learning_rate = 3e-3 # @param {type:"number"}
+actor_learning_rate = 3e-3 # @param {type:"number"}
+alpha_learning_rate = 3e-3 # @param {type:"number"}
 target_update_tau = 0.005 # @param {type:"number"}
 target_update_period = 1 # @param {type:"number"}
 gamma = 0.99 # @param {type:"number"}
@@ -112,12 +112,9 @@ with strategy.scope():
         action_spec,
         actor_network=actor_net,
         critic_network=critic_net,
-        actor_optimizer=tf.keras.optimizers.Adam(
-            learning_rate=actor_learning_rate),
-        critic_optimizer=tf.keras.optimizers.Adam(
-            learning_rate=critic_learning_rate),
-        alpha_optimizer=tf.keras.optimizers.Adam(
-            learning_rate=alpha_learning_rate),
+        actor_optimizer=tf.keras.optimizers.Adam(learning_rate=actor_learning_rate),
+        critic_optimizer=tf.keras.optimizers.Adam(learning_rate=critic_learning_rate),
+        alpha_optimizer=tf.keras.optimizers.Adam(learning_rate=alpha_learning_rate),
         target_update_tau=target_update_tau,
         target_update_period=target_update_period,
         td_errors_loss_fn=tf.math.squared_difference,

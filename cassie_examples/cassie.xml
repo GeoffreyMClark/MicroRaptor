@@ -163,7 +163,7 @@
                     <inertial pos='0.00474 0.02748 -0.00014' mass='0.1498' fullinertia='0.00017388 0.00016793 0.00033261 0.00011814 1.36e-06 -4e-07'/>
                     <joint name='left-foot' type='hinge' range='-140 -30' damping='1' armature='0.01225'/>
                     <geom type='mesh' mesh='left-foot' class='cassie2'/>
-                    <geom type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-left'/>
+                    <geom friction="2.0" type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-left'/>
                   </body>
                 </body>
               </body>
@@ -226,7 +226,7 @@
                     <inertial pos='0.00474 0.02748 0.00014' mass='0.1498' fullinertia='0.00017388 0.00016793 0.00033261 0.00011814 -1.36e-06 4e-07'/>
                     <joint name='right-foot' type='hinge' range='-140 -30' damping='1' armature='0.01225'/>
                     <geom type='mesh' mesh='right-foot' class='cassie2'/>
-                    <geom type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-right'/>
+                    <geom friction="2.0" type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-right'/>
                   </body>
                 </body>
               </body>
