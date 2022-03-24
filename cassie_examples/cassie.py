@@ -20,7 +20,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         healthy_reward=10.0,
         terminate_when_unhealthy=True,
         healthy_z_range=(0.5, 1.5),
-        healthy_foot_z=0.2,
+        healthy_foot_z=0.15,
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.1,
         exclude_current_IMU_from_observation=True,

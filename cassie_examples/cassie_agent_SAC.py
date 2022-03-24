@@ -37,11 +37,11 @@ tempdir = tempfile.gettempdir()
 
 # Use "num_iterations = 1e6" for better results (2 hrs)
 # 1e5 is just so this doesn't take too long (1 hr)
-num_iterations = 5000000 # @param {type:"integer"}
+num_iterations = int(1e6) # @param {type:"integer"}
 
 initial_collect_steps = 10000 # @param {type:"integer"}
 collect_steps_per_iteration = 1 # @param {type:"integer"}
-replay_buffer_capacity = 10000 # @param {type:"integer"}
+replay_buffer_capacity = 50000 # @param {type:"integer"}
 
 batch_size = 256 # @param {type:"integer"}
 
@@ -53,8 +53,8 @@ target_update_period = 1 # @param {type:"number"}
 gamma = 0.99 # @param {type:"number"}
 reward_scale_factor = 1.0 # @param {type:"number"}
 
-actor_fc_layer_params = (256, 256)
-critic_joint_fc_layer_params = (256, 256)
+actor_fc_layer_params = (256, 256, 256, 128, 64, 32)
+critic_joint_fc_layer_params = (256, 256, 256, 128, 64, 32)
 
 log_interval = 1000 # @param {type:"integer"}
 
@@ -94,6 +94,7 @@ with strategy.scope():
         observation_fc_layer_params=None,
         action_fc_layer_params=None,
         joint_fc_layer_params=critic_joint_fc_layer_params,
+        activation_fn=tf.nn.relu,
         kernel_initializer='glorot_uniform',
         last_kernel_initializer='glorot_uniform')
 
@@ -102,6 +103,7 @@ with strategy.scope():
       observation_spec,
       action_spec,
       fc_layer_params=actor_fc_layer_params,
+      activation_fn=tf.nn.relu,
       continuous_projection_net=(
           tanh_normal_projection_network.TanhNormalProjectionNetwork))
 
@@ -242,7 +244,7 @@ log_eval_metrics(0, metrics)
 
 
 
-def show_policy(environment, policy, num_episodes=3):
+def show_policy(environment, policy, num_episodes=1):
   for _ in range(num_episodes):
     time_step = environment.reset()
     episode_return = 0.0
