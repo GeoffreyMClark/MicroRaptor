@@ -19,11 +19,11 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         contact_cost_weight=2e-1,
         healthy_reward=10.0,
         terminate_when_unhealthy=True,
-        healthy_z_range=(0.5, 1.1),
+        healthy_z_range=(0.5, 1.5),
         healthy_foot_z=0.2,
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.1,
-        exclude_current_IMU_from_observation=False,
+        exclude_current_IMU_from_observation=True,
     ):
         utils.EzPickle.__init__(**locals())
 
@@ -103,10 +103,10 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         ctrl_cost = self.control_cost(action)
         contact_cost = self.contact_cost if self.contact_cost>0 else -1000
         healthy_reward = self.healthy_reward
-        reward = healthy_reward - position_z_cost - orientation_cost + contact_cost
+        reward = healthy_reward - position_z_cost - orientation_cost
 
-        if done:
-            reward = -5000
+        # if done:
+        #     reward = -5000
 
         observation = self._get_obs()
         info = {
@@ -132,6 +132,9 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # position = self.sim.data.qpos.flat.copy()
         # velocity = self.sim.data.qvel.flat.copy()
         # contact_force = self.contact_forces.flat.copy()
+        pose = self.get_body_com("cassie-pelvis")[:3].copy()
+        quat = self.data.get_body_xquat("cassie-pelvis")
+        orientation = self.euler_from_quaternion(quat)
         sensordata = self.sim.data.sensordata.flat.copy()
 
         if self.exclude_current_IMU_from_observation:
@@ -139,8 +142,8 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         else:
             sensors = sensordata
 
-        # observations = np.concatenate((position, velocity, contact_force))
-        observations = sensors
+        observations = np.concatenate((pose, orientation, sensors))
+        # observations = sensors
 
         return observations
 

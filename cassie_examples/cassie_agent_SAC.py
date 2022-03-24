@@ -45,9 +45,9 @@ replay_buffer_capacity = 10000 # @param {type:"integer"}
 
 batch_size = 256 # @param {type:"integer"}
 
-critic_learning_rate = 3e-3 # @param {type:"number"}
-actor_learning_rate = 3e-3 # @param {type:"number"}
-alpha_learning_rate = 3e-3 # @param {type:"number"}
+critic_learning_rate = 3e-4 # @param {type:"number"}
+actor_learning_rate = 3e-4 # @param {type:"number"}
+alpha_learning_rate = 3e-4 # @param {type:"number"}
 target_update_tau = 0.005 # @param {type:"number"}
 target_update_period = 1 # @param {type:"number"}
 gamma = 0.99 # @param {type:"number"}
