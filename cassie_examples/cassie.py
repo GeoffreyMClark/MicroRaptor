@@ -129,9 +129,8 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     #     return pose, orientation
 
     def _get_obs(self):
-        position = self.get_body_com("cassie-pelvis").copy()
-        quat = self.data.get_body_xquat("cassie-pelvis").copy()
-        orientation = self.euler_from_quaternion(quat)
+        # position = self.sim.data.qpos.flat.copy()
+        # velocity = self.sim.data.qvel.flat.copy()
         # contact_force = self.contact_forces.flat.copy()
         pose = self.get_body_com("cassie-pelvis")[:3].copy()
         quat = self.data.get_body_xquat("cassie-pelvis")
