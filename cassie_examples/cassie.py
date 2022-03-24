@@ -17,7 +17,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         xml_file=directory_path+"/cassie_examples/cassie.xml",
         ctrl_cost_weight=0.05,
         contact_cost_weight=2e-1,
-        healthy_reward=10.0,
+        healthy_reward=1.0,
         terminate_when_unhealthy=True,
         healthy_z_range=(0.5, 1.5),
         healthy_foot_z=0.15,
@@ -96,17 +96,15 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         done = self.done
         
         orientation_cost = np.sum(np.square(self._adjust_circle(orientation - [np.pi,0,0])*5))
-        position_z_cost = np.square(1-pose[2])
-        xvel_cost = np.square(total_xvel)
-        rvel_cost = np.square(total_rvel)
+        position_cost = np.sum(np.square(self._adjust_circle(pose - [0,0,1])*10))
 
         ctrl_cost = self.control_cost(action)
         contact_cost = self.contact_cost if self.contact_cost>0 else -1000
         healthy_reward = self.healthy_reward
-        reward = healthy_reward - position_z_cost - orientation_cost
+        reward = healthy_reward - position_cost - orientation_cost
 
-        # if done:
-        #     reward = -5000
+        if done:
+            reward = -5000
 
         observation = self._get_obs()
         info = {
@@ -142,7 +140,14 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         else:
             sensors = sensordata
 
-        observations = np.concatenate((pose, orientation, sensors))
+        norm_pose = pose-np.array([0,0,1])
+        norm_orientation = (orientation-np.array([np.pi,0,0]))/np.pi
+        sensor_average=np.array([3.75,15,0,-100.5,-85,0,110,-85,3.75,15,0,-100.5,-85,0,110,-85])
+        sensor_scale=np.array([18.75,22.5,65,63.5,55,20,60,55,18.75,22.5,65,63.5,55,20,60,55])
+        norm_sensors = (sensors-sensor_average)/sensor_scale
+
+        observations = np.concatenate((norm_pose, norm_orientation, norm_sensors))
+        # observations = np.concatenate((pose, orientation, sensors))
         # observations = sensors
 
         return observations
@@ -180,20 +185,17 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         t0 = +2.0 * (w * x + y * z)
         t1 = +1.0 - 2.0 * (x * x + y * y)
         roll_x = math.atan2(t0, t1)
-     
+        if roll_x < 0: roll_x = roll_x + 2*np.pi 
         t2 = +2.0 * (w * y - z * x)
         t2 = +1.0 if t2 > +1.0 else t2
         t2 = -1.0 if t2 < -1.0 else t2
         pitch_y = math.asin(t2)
-     
         t3 = +2.0 * (w * z + x * y)
         t4 = +1.0 - 2.0 * (y * y + z * z)
         yaw_z = math.atan2(t3, t4)
-     
         return np.asarray([roll_x, pitch_y, yaw_z]) # in radians
 
     def _adjust_circle(self, orientetion):
         temp = np.where(orientetion>(np.pi), orientetion-(2*np.pi), orientetion)
         adjusted = np.where(temp<(-np.pi), temp+(2*np.pi), temp)
         return adjusted 
-

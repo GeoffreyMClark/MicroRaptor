@@ -50,11 +50,11 @@ actor_learning_rate = 3e-4 # @param {type:"number"}
 alpha_learning_rate = 3e-4 # @param {type:"number"}
 target_update_tau = 0.005 # @param {type:"number"}
 target_update_period = 1 # @param {type:"number"}
-gamma = 0.99 # @param {type:"number"}
+gamma = 0.995 # @param {type:"number"}
 reward_scale_factor = 1.0 # @param {type:"number"}
 
-actor_fc_layer_params = (256, 256, 256, 128, 64, 32)
-critic_joint_fc_layer_params = (256, 256, 256, 128, 64, 32)
+actor_fc_layer_params = (128, 128, 64)
+critic_joint_fc_layer_params = (128, 128, 64)
 
 log_interval = 1000 # @param {type:"integer"}
 
@@ -269,7 +269,7 @@ tf_agent.train_step_counter.assign(0)
 avg_return = get_eval_metrics()["AverageReturn"]
 returns = [avg_return]
 
-show_policy(display_env, eval_actor.policy, num_episodes=3)
+show_policy(display_env, eval_actor.policy)
 
 for _ in range(num_iterations):
   # Training.
@@ -286,7 +286,7 @@ for _ in range(num_iterations):
 
   if log_interval and step % log_interval == 0:
     print('step = {0}: loss = {1}'.format(step, loss_info.loss.numpy()))
-    show_policy(display_env, eval_actor.policy, num_episodes=3)
+    show_policy(display_env, eval_actor.policy)
 
 
 
