@@ -1,7 +1,8 @@
 import numpy as np
 from gym import utils
 from gym.envs.mujoco import mujoco_env
-from gym.envs.registration import register
+# from gym.envs.registration import register
+from gym.envs import register
 import math
 import os
 
@@ -14,20 +15,18 @@ directory_path = os.getcwd()
 class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def __init__(
         self,
-        xml_file=directory_path+"/cassie_examples/cassie.xml",
+        xml_file=directory_path+"/cassie/envs/cassie.xml",
         ctrl_cost_weight=0.05,
         contact_cost_weight=2e-1,
-        healthy_reward=1.0,
+        healthy_reward=10.0,
         terminate_when_unhealthy=True,
         healthy_z_range=(0.5, 1.5),
-        healthy_foot_z=0.15,
+        healthy_foot_z=0.3,
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.1,
         exclude_current_IMU_from_observation=True,
     ):
         utils.EzPickle.__init__(**locals())
-
-        register(id='Cassie-v0', entry_point='cassie_examples.cassie:CassieEnv')
 
         self._ctrl_cost_weight = ctrl_cost_weight
         self._contact_cost_weight = contact_cost_weight
@@ -44,6 +43,10 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.exclude_current_IMU_from_observation = (
             exclude_current_IMU_from_observation
         )
+
+        self.sensor_average=np.array([3.75,15,0,-100.5,-85,0,110,-85,3.75,15,0,-100.5,-85,0,110,-85])
+        self.sensor_scale=np.array([18.75,22.5,65,63.5,55,20,60,55,18.75,22.5,65,63.5,55,20,60,55])
+        self.action_scale=np.array([4.5, 4.5, 12.2, 12.2, .9, 4.5, 4.5, 12.2, 12.2, .9])
 
         mujoco_env.MujocoEnv.__init__(self, xml_file, 1)
 
@@ -83,48 +86,31 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         return done
 
     def step(self, action):
+        # action = np.clip(action,-1, 1)
+        # scaled_action = action*self.action_scale
         self.do_simulation(action, self.frame_skip)
         pose = self.get_body_com("cassie-pelvis")[:3].copy()
+        pose_vel = self.data.get_body_xvelp("cassie-pelvis")
         quat = self.data.get_body_xquat("cassie-pelvis")
+        quat_vel = self.data.get_body_xvelr("cassie-pelvis")
         orientation = self.euler_from_quaternion(quat)
-        xvel = self.data.get_body_xvelp("cassie-pelvis")
-        rvel = self.data.get_body_xvelr("cassie-pelvis")
-
-        total_xvel = np.sum(xvel)
-        total_rvel = np.sum(rvel)
         
-        done = self.done
-        
-        orientation_cost = np.sum(np.square(self._adjust_circle(orientation - [np.pi,0,0])*5))
-        position_cost = np.sum(np.square(self._adjust_circle(pose - [0,0,1])*10))
+        orientation_cost = np.sum(np.square((orientation - [np.pi,0,0])*2))
+        position_cost = np.sum(np.square((pose - [0,0,1])*10))
+        foot_cost = np.square((self.get_body_com("left-foot")[2] + self.get_body_com("right-foot")[2] - .1)*10)
 
         ctrl_cost = self.control_cost(action)
-        contact_cost = self.contact_cost if self.contact_cost>0 else -1000
         healthy_reward = self.healthy_reward
-        reward = healthy_reward - position_cost - orientation_cost
+        reward = healthy_reward - position_cost - orientation_cost - foot_cost
 
+        done = self.done
         if done:
-            reward = -5000
+            reward = reward - healthy_reward
 
         observation = self._get_obs()
-        info = {
-            # "cost_motion": position_x_cost+position_y_cost,
-            # "cost_ctrl": ctrl_cost,
-            # "reward_stand": healthy_reward,
-            # "x_position": xyz_position_after[0],
-            # "y_position": xyz_position_after[1],
-            # "distance_from_origin": np.linalg.norm(xyz_position_after, ord=2),
-            # "total_velocity": total_xyz_velocity,
-            # "y_velocity": y_velocity,
-            # "forward_reward": forward_reward,
-        }
+        info = {}
         return observation, reward, done, info
 
-    # def _get_pose_and_orientation(self):
-    #     pose = self.get_body_com("cassie-pelvis")[:3].copy()
-    #     quat = self.data.get_body_xquat("cassie-pelvis")
-    #     orientation = self.euler_from_quaternion(quat)
-    #     return pose, orientation
 
     def _get_obs(self):
         # position = self.sim.data.qpos.flat.copy()
@@ -142,22 +128,17 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         norm_pose = pose-np.array([0,0,1])
         norm_orientation = (orientation-np.array([np.pi,0,0]))/np.pi
-        sensor_average=np.array([3.75,15,0,-100.5,-85,0,110,-85,3.75,15,0,-100.5,-85,0,110,-85])
-        sensor_scale=np.array([18.75,22.5,65,63.5,55,20,60,55,18.75,22.5,65,63.5,55,20,60,55])
-        norm_sensors = (sensors-sensor_average)/sensor_scale
+        norm_sensors = (sensors-self.sensor_average)/self.sensor_scale
 
         observations = np.concatenate((norm_pose, norm_orientation, norm_sensors))
-        # observations = np.concatenate((pose, orientation, sensors))
-        # observations = sensors
-
         return observations
 
     def reset_model(self):
-        noise_low = -self._reset_noise_scale
-        noise_high = self._reset_noise_scale
+        noise_low = -self._reset_noise_scale/2
+        noise_high = self._reset_noise_scale/2
 
         # qpos = self.init_qpos + self.np_random.uniform(low=noise_low, high=noise_high, size=self.model.nq)
-        qpos = np.asarray([  1.00000390e-04,  1.10453331e-05,  9.89611245e-01,  9.99999981e-01,
+        zero_pose = np.asarray([  1.00000390e-04,  1.10453331e-05,  9.89611245e-01,  9.99999981e-01,
                             -1.50645122e-06, -1.93453798e-04, -1.53469430e-09,  6.83438358e-02,
                             -8.57605285e-05,  6.21365611e-01,  9.56814499e-01, -1.53944178e-02,
                                 2.70039519e-02, -2.89032546e-01, -1.37987287e+00,  3.22283275e-03,
@@ -166,6 +147,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                                 9.55578531e-01, -5.09970882e-02, -6.89472086e-03, -2.90209289e-01,
                             -1.37987225e+00,  3.22283929e-03,  1.59371522e+00,  6.91570380e-04,
                             -1.59253155e+00,  1.57410108e+00, -1.69989113e+00])
+        qpos = zero_pose + self.np_random.uniform(low=noise_low, high=noise_high, size=zero_pose.shape[0])
         qvel = self.init_qvel + self._reset_noise_scale * self.np_random.randn(self.model.nv)
         self.set_state(qpos, qvel)
 
@@ -195,7 +177,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         yaw_z = math.atan2(t3, t4)
         return np.asarray([roll_x, pitch_y, yaw_z]) # in radians
 
-    def _adjust_circle(self, orientetion):
-        temp = np.where(orientetion>(np.pi), orientetion-(2*np.pi), orientetion)
-        adjusted = np.where(temp<(-np.pi), temp+(2*np.pi), temp)
-        return adjusted 
+    # def _adjust_circle(self, orientetion):
+    #     temp = np.where(orientetion>(np.pi), orientetion-(2*np.pi), orientetion)
+    #     adjusted = np.where(temp<(-np.pi), temp+(2*np.pi), temp)
+    #     return adjusted 

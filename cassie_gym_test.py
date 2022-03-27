@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 import time
-from cassie import CassieEnv
+from cassie.envs.cassie import CassieEnv
 from tf_agents.environments import suite_gym
 
 # This should always work
@@ -23,6 +23,9 @@ for i in range(1000000000):
     D = (prev_pose-actual_pose)*Kd
     action = P 
 
+    # action = np.asarray([100,100,100,100,100,100,100,100,100,100])
+
+
     prev_pose = actual_pose
     obs, reward, done, info = env.step(action)
 env.close()
@@ -39,3 +42,4 @@ pass
 
 
 
+9e10
