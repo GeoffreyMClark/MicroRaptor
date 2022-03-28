@@ -18,7 +18,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         xml_file=directory_path+"/cassie/envs/cassie.xml",
         ctrl_cost_weight=0.05,
         contact_cost_weight=2e-1,
-        healthy_reward=10.0,
+        healthy_reward=7.0,
         terminate_when_unhealthy=True,
         healthy_z_range=(0.5, 1.5),
         healthy_foot_z=0.3,
@@ -95,17 +95,23 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         quat_vel = self.data.get_body_xvelr("cassie-pelvis")
         orientation = self.euler_from_quaternion(quat)
         
-        orientation_cost = np.sum(np.square((orientation - [np.pi,0,0])*2))
-        position_cost = np.sum(np.square((pose - [0,0,1])*10))
-        foot_cost = np.square((self.get_body_com("left-foot")[2] + self.get_body_com("right-foot")[2] - .1)*10)
+        # orientation_cost = np.sum(np.square((orientation - [np.pi,0,0])*2))
+        # position_cost = np.sum(np.square((pose - [0,0,1])*10))
+        # foot_cost = np.square((self.get_body_com("left-foot")[2] + self.get_body_com("right-foot")[2] - .1)*10)
+        # ctrl_cost = self.control_cost(action)
+        # healthy_reward = self.healthy_reward
+        # reward = healthy_reward - position_cost - orientation_cost - foot_cost
 
-        ctrl_cost = self.control_cost(action)
-        healthy_reward = self.healthy_reward
-        reward = healthy_reward - position_cost - orientation_cost - foot_cost
+
+        position_reward = np.sum(np.abs(1-((pose - [0,0,1])/0.5))**.5)/3
+        orientation_reward = np.sum(np.abs(1-((orientation - [np.pi,0,0])/np.pi))**.5)/3
+        foot_reward = np.abs(1-(self.get_body_com("left-foot")[2]/.3))**.5 + np.abs(1-(self.get_body_com("right-foot")[2]/.3))**.5
+
+        reward = position_reward + orientation_reward + foot_reward
 
         done = self.done
-        if done:
-            reward = reward - healthy_reward
+        # if done:
+        #     reward = reward - healthy_reward
 
         observation = self._get_obs()
         info = {}
