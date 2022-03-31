@@ -21,11 +21,11 @@ if __name__ == '__main__':
     env_id = 'CassieEnv-v0'
     num_cpu = 8  # Number of processes to use
     # You can choose between `DummyVecEnv` (usually faster) and `SubprocVecEnv`
-    env = make_vec_env(env_id, n_envs=num_cpu, gamma=0.997, seed=0, vec_env_cls=DummyVecEnv)
+    env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=DummyVecEnv)
     # Custom actor (pi) and value function (vf) networks
     # of two layers of size 32 each with Relu activation function
     policy_kwargs = dict(activation_fn=th.nn.ReLU, net_arch=[dict(pi=[512, 256], vf=[512, 256])])
-    model = PPO('MlpPolicy', env, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+    model = PPO('MlpPolicy', env, gamma=0.997, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
 
     render_call = RenderCallback(render_freq=10000, env=eval_env)
 

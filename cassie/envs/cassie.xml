@@ -287,33 +287,33 @@
     <jointpos    name='right-tarsus-output'   joint='right-tarsus'        user='18' noise='2e-14'/>
     <jointpos    name='right-foot-output'     joint='right-foot'          user='13'/>
 
-    <actuatorvel name='left-hip-roll-input'  actuator='left-hip-roll'   />
-    <actuatorvel name='left-hip-yaw-input'   actuator='left-hip-yaw'    />
-    <actuatorvel name='left-hip-pitch-input' actuator='left-hip-pitch'  />
-    <actuatorvel name='left-knee-input'      actuator='left-knee'       />
-    <actuatorvel name='left-foot-input'      actuator='left-foot'       />
-    <jointvel    name='left-shin-output'     joint='left-shin'          />
-    <jointvel    name='left-tarsus-output'   joint='left-tarsus'        />
-    <jointvel    name='left-foot-output'     joint='left-foot'          />
-    <actuatorvel name='right-hip-roll-input'  actuator='right-hip-roll' />
-    <actuatorvel name='right-hip-yaw-input'   actuator='right-hip-yaw'  />
-    <actuatorvel name='right-hip-pitch-input' actuator='right-hip-pitch'/>
-    <actuatorvel name='right-knee-input'      actuator='right-knee'     />
-    <actuatorvel name='right-foot-input'      actuator='right-foot'     />
-    <jointvel    name='right-shin-output'     joint='right-shin'        />
-    <jointvel    name='right-tarsus-output'   joint='right-tarsus'      />
-    <jointvel    name='right-foot-output'     joint='right-foot'        />
+    <actuatorvel name='left-hip-roll-input-vel'  actuator='left-hip-roll'   />
+    <actuatorvel name='left-hip-yaw-input-vel'   actuator='left-hip-yaw'    />
+    <actuatorvel name='left-hip-pitch-input-vel' actuator='left-hip-pitch'  />
+    <actuatorvel name='left-knee-input-vel'      actuator='left-knee'       />
+    <actuatorvel name='left-foot-input-vel'      actuator='left-foot'       />
+    <jointvel    name='left-shin-output-vel'     joint='left-shin'          />
+    <jointvel    name='left-tarsus-output-vel'   joint='left-tarsus'        />
+    <jointvel    name='left-foot-output-vel'     joint='left-foot'          />
+    <actuatorvel name='right-hip-roll-input-vel'  actuator='right-hip-roll' />
+    <actuatorvel name='right-hip-yaw-input-vel'   actuator='right-hip-yaw'  />
+    <actuatorvel name='right-hip-pitch-input-vel' actuator='right-hip-pitch'/>
+    <actuatorvel name='right-knee-input-vel'      actuator='right-knee'     />
+    <actuatorvel name='right-foot-input-vel'      actuator='right-foot'     />
+    <jointvel    name='right-shin-output-vel'     joint='right-shin'        />
+    <jointvel    name='right-tarsus-output-vel'   joint='right-tarsus'      />
+    <jointvel    name='right-foot-output-vel'     joint='right-foot'        />
 
-    <actuatorfrc name='left-hip-roll-input'  actuator='left-hip-roll'   />
-    <actuatorfrc name='left-hip-yaw-input'   actuator='left-hip-yaw'    />
-    <actuatorfrc name='left-hip-pitch-input' actuator='left-hip-pitch'  />
-    <actuatorfrc name='left-knee-input'      actuator='left-knee'       />
-    <actuatorfrc name='left-foot-input'      actuator='left-foot'       />
-    <actuatorfrc name='right-hip-roll-input'  actuator='right-hip-roll' />
-    <actuatorfrc name='right-hip-yaw-input'   actuator='right-hip-yaw'  />
-    <actuatorfrc name='right-hip-pitch-input' actuator='right-hip-pitch'/>
-    <actuatorfrc name='right-knee-input'      actuator='right-knee'     />
-    <actuatorfrc name='right-foot-input'      actuator='right-foot'     />
+    <actuatorfrc name='left-hip-roll-input-force'  actuator='left-hip-roll'   />
+    <actuatorfrc name='left-hip-yaw-input-force'   actuator='left-hip-yaw'    />
+    <actuatorfrc name='left-hip-pitch-input-force' actuator='left-hip-pitch'  />
+    <actuatorfrc name='left-knee-input-force'      actuator='left-knee'       />
+    <actuatorfrc name='left-foot-input-force'      actuator='left-foot'       />
+    <actuatorfrc name='right-hip-roll-input-force'  actuator='right-hip-roll' />
+    <actuatorfrc name='right-hip-yaw-input-force'   actuator='right-hip-yaw'  />
+    <actuatorfrc name='right-hip-pitch-input-force' actuator='right-hip-pitch'/>
+    <actuatorfrc name='right-knee-input-force'      actuator='right-knee'     />
+    <actuatorfrc name='right-foot-input-force'      actuator='right-foot'     />
 
     <framequat     name='pelvis-orientation' objtype='site' objname='imu'/>
     <gyro          name='pelvis-angular-velocity'    site='imu' noise='5e-4' cutoff='34.9'/>
