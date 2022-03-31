@@ -23,7 +23,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         healthy_z_range=(0.5, 1.5),
         healthy_foot_z=0.3,
         contact_force_range=(-1.0, 1.0),
-        reset_noise_scale=0.1,
+        reset_noise_scale=0.01,
         exclude_current_IMU_from_observation=True,
     ):
         utils.EzPickle.__init__(**locals())
@@ -103,9 +103,15 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # reward = healthy_reward - position_cost - orientation_cost - foot_cost
 
 
-        position_reward = np.sum(np.abs(1-((pose - [0,0,1])/0.5))**.5)/3
-        orientation_reward = np.sum(np.abs(1-((orientation - [np.pi,0,0])/np.pi))**.5)/3
-        foot_reward = np.abs(1-(self.get_body_com("left-foot")[2]/.3))**.5 + np.abs(1-(self.get_body_com("right-foot")[2]/.3))**.5
+        # NEW POSSIBLE REWARD CONDITION
+        # softsomething = lambda x: np.log(1+np.e^(-3.5*x))*1.5 #x in range 0-inf best for 0-1
+
+        positionx_reward = np.clip((1-np.abs((pose[0] - 0)/0.15))*3, a_min=0, a_max=3)
+        positiony_reward = np.clip(1-np.abs((pose[1] - 0)/0.2), a_min=0, a_max=1)
+        positionz_reward = np.clip(1-np.abs((pose[2] - 1)/0.5), a_min=0, a_max=1)
+        position_reward = positionx_reward + positiony_reward + positionz_reward
+        orientation_reward = np.clip(1-(np.sum(np.abs((orientation - [np.pi,0,0])))), a_min=0, a_max=1)
+        foot_reward = (1-np.abs(self.get_body_com("left-foot")[2]/.301)) + (1-np.abs(self.get_body_com("right-foot")[2]/.301))
 
         reward = position_reward + orientation_reward + foot_reward
 
@@ -140,8 +146,8 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         return observations
 
     def reset_model(self):
-        noise_low = -self._reset_noise_scale/2
-        noise_high = self._reset_noise_scale/2
+        noise_low = -self._reset_noise_scale
+        noise_high = self._reset_noise_scale
 
         # qpos = self.init_qpos + self.np_random.uniform(low=noise_low, high=noise_high, size=self.model.nq)
         zero_pose = np.asarray([  1.00000390e-04,  1.10453331e-05,  9.89611245e-01,  9.99999981e-01,
