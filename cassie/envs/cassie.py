@@ -21,6 +21,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         healthy_reward=7.0,
         terminate_when_unhealthy=True,
         healthy_z_range=(0.5, 1.5),
+        healthy_x_range=(-0.3, 0.3),
         healthy_foot_z=0.3,
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.01,
@@ -35,6 +36,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self._terminate_when_unhealthy = terminate_when_unhealthy
         self._healthy_z_range = healthy_z_range
         self._healthy_foot_z = healthy_foot_z
+        self._healthy_x_range = healthy_x_range
 
         self._contact_force_range = contact_force_range
 
@@ -47,6 +49,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.sensor_average=np.array([3.75,15,0,-100.5,-85,0,110,-85,3.75,15,0,-100.5,-85,0,110,-85])
         self.sensor_scale=np.array([18.75,22.5,65,63.5,55,20,60,55,18.75,22.5,65,63.5,55,20,60,55])
         self.action_scale=np.array([4.5, 4.5, 12.2, 12.2, .9, 4.5, 4.5, 12.2, 12.2, .9])
+        self.previous_norm_sensors = np.array([-0.2, -0.66666667, 0., 1.38478157, 1.54545455, 0., -1.81646182, 1.54545455, -0.2, -0.66666667, 0., 1.38478157, 1.54545455, 0., -1.81646182, 1.54545455])
 
         mujoco_env.MujocoEnv.__init__(self, xml_file, 1)
 
@@ -76,8 +79,9 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         left_foot_z = self.get_body_com("left-foot")[2]
         right_foot_z = self.get_body_com("right-foot")[2]
         min_z, max_z = self._healthy_z_range
+        min_x, max_x = self._healthy_x_range
         max_foot = self._healthy_foot_z
-        is_healthy = np.isfinite(state).all() and min_z <= state[2] <= max_z and (left_foot_z <= max_foot and right_foot_z <= max_foot)
+        is_healthy = np.isfinite(state).all() and min_z <= state[2] <= max_z and left_foot_z <= max_foot and right_foot_z <= max_foot and min_x <= state[0] <= max_x
         return is_healthy
 
     @property
@@ -128,21 +132,22 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # position = self.sim.data.qpos.flat.copy()
         # velocity = self.sim.data.qvel.flat.copy()
         # contact_force = self.contact_forces.flat.copy()
-        pose = self.get_body_com("cassie-pelvis")[:3].copy()
+        pose = self.data.get_body_xpos("cassie-pelvis")
+        pose_vel = self.data.get_body_xvelp("cassie-pelvis")
         quat = self.data.get_body_xquat("cassie-pelvis")
         orientation = self.euler_from_quaternion(quat)
+        orientation_vel = self.data.get_body_xvelr("cassie-pelvis")
         sensordata = self.sim.data.sensordata.flat.copy()
 
-        if self.exclude_current_IMU_from_observation:
-            sensors = sensordata[0:16]
-        else:
-            sensors = sensordata
+        sensors = sensordata[0:16]
 
         norm_pose = pose-np.array([0,0,1])
         norm_orientation = (orientation-np.array([np.pi,0,0]))/np.pi
         norm_sensors = (sensors-self.sensor_average)/self.sensor_scale
+        norm_sensor_velocity = (norm_sensors-self.previous_norm_sensors)/self.dt
 
-        observations = np.concatenate((norm_pose, norm_orientation, norm_sensors))
+        # observations = np.concatenate((norm_pose, norm_orientation, norm_sensors))
+        observations = np.concatenate((norm_pose, pose_vel, norm_orientation, orientation_vel, norm_sensors))
         return observations
 
     def reset_model(self):

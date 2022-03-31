@@ -26,13 +26,12 @@ class RenderCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         if self.n_calls % self.render_freq == 0:
-
-         for _ in range(3):
-            obs = self.env.reset()
-            done= False
-            while done == False:
-                action, _states = self.model.predict(obs)
-                obs, reward, done, info = self.env.step(action)
-                raw=self.env.render(mode='rgb_array')
-                cv2.imshow("cassie_standing_model",raw)
-                cv2.waitKey(1)
+            for _ in range(1):
+                obs = self.env.reset()
+                done= False
+                while done == False:
+                    action, _states = self.model.predict(obs)
+                    obs, reward, done, info = self.env.step(action)
+                    raw=self.env.render(mode='rgb_array')
+                    cv2.imshow("cassie_standing_model",raw)
+                    cv2.waitKey(1)
