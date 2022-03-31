@@ -16,25 +16,6 @@ from cassie.envs.cassie import CassieEnv
 from cassie_render_callback import RenderCallback
 
 
-# env = CassieEnv()
-# model = PPO('MlpPolicy', env, verbose=1)
-# for i in range(int(1e6)):
-#     time1 = time.perf_counter()
-#     model.learn(total_timesteps=int(2e5))
-#     time2 = time.perf_counter()
-#     print("Elapsed Time - ",time2-time1)
-
-#     # model.save(f"dqn_cassie_{i}_larger_healthy_reward")
-#     mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=10)
-#     print(mean_reward, std_reward)
-
-#     obs = env.reset()
-#     for i in range(1000):
-#         action, _states = model.predict(obs, deterministic=True)
-#         obs, rewards, done, info = env.step(action)
-#         env.render()
-
-
 if __name__ == '__main__':
     eval_env = CassieEnv()
     env_id = 'CassieEnv-v0'
@@ -53,12 +34,12 @@ if __name__ == '__main__':
         model.save("cassie_standing{i}")
 
 
-        for _ in range(3):
-            obs = eval_env.reset()
-            done= False
-            while done == False:
-                action, _states = model.predict(obs)
-                obs, reward, done, info = eval_env.step(action)
-                raw=eval_env.render(mode='rgb_array')
-                cv2.imshow("cassie_standing_model",raw)
-                cv2.waitKey(1)
+        # for _ in range(3):
+        #     obs = eval_env.reset()
+        #     done= False
+        #     while done == False:
+        #         action, _states = model.predict(obs)
+        #         obs, reward, done, info = eval_env.step(action)
+        #         raw=eval_env.render(mode='rgb_array')
+        #         cv2.imshow("cassie_standing_model",raw)
+        #         cv2.waitKey(1)
