@@ -1,6 +1,7 @@
 import gym
 import numpy as np
 import time
+import cv2
 from cassie.envs.cassie import CassieEnv
 from tf_agents.environments import suite_gym
 
@@ -12,7 +13,9 @@ prev_pose = np.asarray([3, 0, 10, -25, -85,   -3, 0, 10, -25, -85])
 Kp = 1
 Kd = .5
 for i in range(1000000000):
-    env.render()
+    camera = env.render(mode="rgb_array", camera_id=0)
+    cv2.imshow("camera 0", camera)
+    cv2.waitKey(1)
 
     print(obs[3:6])
 
@@ -29,7 +32,7 @@ for i in range(1000000000):
     t4 = np.sin(i/133)*10
     t5 = np.sin(i/142)*10
 
-    action = np.asarray([t1,t2,t3,t4,t5,t5,t4,t3,t2,t1])
+    action = np.asarray([0,0,0,0,0,0,0,0,0,0])
 
 
     prev_pose = actual_pose
@@ -47,5 +50,3 @@ pass
 
 
 
-
-9e10

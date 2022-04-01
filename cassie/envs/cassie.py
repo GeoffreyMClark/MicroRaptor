@@ -22,7 +22,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         terminate_when_unhealthy=True,
         healthy_z_range=(0.5, 1.5),
         healthy_x_range=(-0.3, 0.3),
-        healthy_foot_z=0.3,
+        healthy_foot_z=0.2,
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.01,
         exclude_current_IMU_from_observation=True,
@@ -75,8 +75,8 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     @property
     def is_healthy(self):
         state = self.state_vector()
-        left_foot_z = self.get_body_com("left-foot")[2]
-        right_foot_z = self.get_body_com("right-foot")[2]
+        left_foot_x, left_foot_y, left_foot_z = self.get_body_com("left-foot")
+        right_foot_x, right_foot_y, right_foot_z = self.get_body_com("right-foot")
         min_z, max_z = self._healthy_z_range
         min_x, max_x = self._healthy_x_range
         max_foot = self._healthy_foot_z
@@ -98,31 +98,32 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         quat = self.data.get_body_xquat("cassie-pelvis")
         quat_vel = self.data.get_body_xvelr("cassie-pelvis")
         orientation = self.euler_from_quaternion(quat)
+        left_foot_pose = self.get_body_com("left-foot")
+        right_foot_pose = self.get_body_com("right-foot")
         
-        # orientation_cost = np.sum(np.square((orientation - [np.pi,0,0])*2))
-        # position_cost = np.sum(np.square((pose - [0,0,1])*10))
-        # foot_cost = np.square((self.get_body_com("left-foot")[2] + self.get_body_com("right-foot")[2] - .1)*10)
-        # ctrl_cost = self.control_cost(action)
-        # healthy_reward = self.healthy_reward
-        # reward = healthy_reward - position_cost - orientation_cost - foot_cost
-
-
         # NEW POSSIBLE REWARD CONDITION
-        # softsomething = lambda x: np.log(1+np.e^(-3.5*x))*1.5 #x in range 0-inf best for 0-1
+        # softsomething = lambda x: (1/(x+1)**3) #x in range 0-inf best for 0-1
 
-        positionx_reward = np.clip((1-np.abs((pose[0] - 0)/0.15))*3, a_min=0, a_max=3)
-        positiony_reward = np.clip(1-np.abs((pose[1] - 0)/0.2), a_min=0, a_max=1)
-        positionz_reward = np.clip(1-np.abs((pose[2] - 1)/0.5), a_min=0, a_max=1)
-        position_reward = positionx_reward + positiony_reward + positionz_reward
-        orientation_reward = np.clip(1-(np.sum(np.abs((orientation - [np.pi,0,0])))), a_min=0, a_max=1)
-        foot_reward = (1-np.abs(self.get_body_com("left-foot")[2]/.301)) + (1-np.abs(self.get_body_com("right-foot")[2]/.301))
+        # positionx_reward = np.clip((1-np.abs((pose[0] - 0)/0.15))*3, a_min=0, a_max=3)
+        # positiony_reward = np.clip(1-np.abs((pose[1] - 0)/0.2), a_min=0, a_max=1)
+        # positionz_reward = np.clip(1-np.abs((pose[2] - 1)/0.5), a_min=0, a_max=1)
+        # position_reward = positionx_reward + positiony_reward + positionz_reward
+        # orientation_reward = np.clip((1-(np.sum(np.abs((orientation - [np.pi,0,0])))))*3, a_min=0, a_max=1)
+        # foot_reward = (1-np.abs(self.get_body_com("left-foot")[2]/.2)) + (1-np.abs(self.get_body_com("right-foot")[2]/.2))
 
-        reward = position_reward + orientation_reward + foot_reward
 
+        position_error = np.abs((pose-[0,0,0.96])/0.2).sum()
+        orientation_error = np.abs((orientation-[np.pi,0,0])/1).sum()
+        leftfoot_error = np.abs((left_foot_pose-[0, 0.2, 0.04])/0.2).sum()         #left foot 0 pose  [-0.00880596,  0.2150994 ,  0.06848903]
+        rightfoot_error = np.abs((right_foot_pose-[0,-0.2, 0.04])/0.2).sum()       #right foot 0 pose [-0.01198452, -0.17144046,  0.0620562 ]
+
+        position_reward = np.e**(-3*position_error)
+        orientation_reward = np.e**(-3*orientation_error)
+        leftfoot_reward = np.e**(-3*leftfoot_error)
+        rightfoot_reward = np.e**(-3*rightfoot_error)
+
+        reward = position_reward + orientation_reward + leftfoot_reward + rightfoot_reward
         done = self.done
-        # if done:
-        #     reward = reward - healthy_reward
-
         observation = self._get_obs()
         info = {}
         return observation, reward, done, info
