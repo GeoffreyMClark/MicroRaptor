@@ -46,11 +46,10 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             exclude_current_IMU_from_observation
         )
 
-        self.sensor_average=np.array([3.75,15,0,-100.5,-85,0,110,-85,3.75,15,0,-100.5,-85,0,110,-85])
-        self.sensor_scale=np.array([18.75,22.5,65,63.5,55,20,60,55,18.75,22.5,65,63.5,55,20,60,55])
+        self.sensor_average=np.array([3.75,15,0,-100.5,-85,0,1.8,-1.5,3.75,15,0,-100.5,-85,0,1.8,-1.5,    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+        self.sensor_scale=np.array([18.75,22.5,65,63.5,55,.5,1.65,1.3,18.75,22.5,65,63.5,55,.5,1.65,1.3,  600,600,600,600,1500,25,40,25,600,600,600,600,1500,25,40,25])
         self.action_scale=np.array([4.5, 4.5, 12.2, 12.2, .9, 4.5, 4.5, 12.2, 12.2, .9])
-        self.previous_norm_sensors = np.array([-0.2, -0.66666667, 0., 1.38478157, 1.54545455, 0., -1.81646182, 1.54545455, -0.2, -0.66666667, 0., 1.38478157, 1.54545455, 0., -1.81646182, 1.54545455])
-
+        
         mujoco_env.MujocoEnv.__init__(self, xml_file, 1)
 
     @property
@@ -90,9 +89,10 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         return done
 
     def step(self, action):
-        # action = np.clip(action,-1, 1)
-        # scaled_action = action*self.action_scale
-        self.do_simulation(action, self.frame_skip)
+        action = np.clip(action,-1, 1)
+        scaled_action = action*self.action_scale
+
+        self.do_simulation(scaled_action, self.frame_skip)
         pose = self.get_body_com("cassie-pelvis")[:3].copy()
         pose_vel = self.data.get_body_xvelp("cassie-pelvis")
         quat = self.data.get_body_xquat("cassie-pelvis")
@@ -139,12 +139,11 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         orientation_vel = self.data.get_body_xvelr("cassie-pelvis")
         sensordata = self.sim.data.sensordata.flat.copy()
 
-        sensors = sensordata[0:16]
+        sensors = sensordata[0:32]
 
         norm_pose = pose-np.array([0,0,1])
         norm_orientation = (orientation-np.array([np.pi,0,0]))/np.pi
         norm_sensors = (sensors-self.sensor_average)/self.sensor_scale
-        norm_sensor_velocity = (norm_sensors-self.previous_norm_sensors)/self.dt
 
         # observations = np.concatenate((norm_pose, norm_orientation, norm_sensors))
         observations = np.concatenate((norm_pose, pose_vel, norm_orientation, orientation_vel, norm_sensors))

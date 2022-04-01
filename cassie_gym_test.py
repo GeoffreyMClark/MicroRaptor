@@ -23,7 +23,13 @@ for i in range(1000000000):
     D = (prev_pose-actual_pose)*Kd
     action = P 
 
-    action = np.asarray([0,0,0,0,0,0,0,0,0,0])
+    t1 = np.sin(i/100)*10
+    t2 = np.sin(i/115)*10
+    t3 = np.sin(i/124)*10
+    t4 = np.sin(i/133)*10
+    t5 = np.sin(i/142)*10
+
+    action = np.asarray([t1,t2,t3,t4,t5,t5,t4,t3,t2,t1])
 
 
     prev_pose = actual_pose
