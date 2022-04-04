@@ -37,6 +37,8 @@ for i in range(1000000000):
 
     prev_pose = actual_pose
     obs, reward, done, info = env.step(action)
+    if i==10:
+        pass
 env.close()
 
 

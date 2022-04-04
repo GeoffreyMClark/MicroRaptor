@@ -1,3 +1,4 @@
+from ntpath import join
 import numpy as np
 from gym import utils
 from gym.envs.mujoco import mujoco_env
@@ -24,7 +25,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         healthy_x_range=(-0.3, 0.3),
         healthy_foot_z=0.2,
         contact_force_range=(-1.0, 1.0),
-        reset_noise_scale=0.01,
+        reset_noise_scale=.05,
         exclude_current_IMU_from_observation=True,
     ):
         utils.EzPickle.__init__(**locals())
@@ -37,6 +38,8 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self._healthy_z_range = healthy_z_range
         self._healthy_foot_z = healthy_foot_z
         self._healthy_x_range = healthy_x_range
+        self.left_foot_initial_pose = np.array([0,0,0])
+        self.right_foot_initial_pose = np.array([0,0,0])
 
         self._contact_force_range = contact_force_range
 
@@ -99,33 +102,43 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         quat_vel = self.data.get_body_xvelr("cassie-pelvis")
         orientation = self.euler_from_quaternion(quat)
         left_foot_pose = self.get_body_com("left-foot")
+        left_foot_vel = self.data.get_body_xvelp("left-foot")
         right_foot_pose = self.get_body_com("right-foot")
+        right_foot_vel = self.data.get_body_xvelp("right-foot")
+        joint_velocitites = self.sim.data.sensordata.flat.copy()[16:32]
         
-        # NEW POSSIBLE REWARD CONDITION
-        # softsomething = lambda x: (1/(x+1)**3) #x in range 0-inf best for 0-1
+        # NEED TO ADD REWARD FOR VELOCITIES (JOINT)
+        # NEED TO ADD REWARD FOR LOW JOINT TORQUES
+        trunk_position_error = np.abs((pose-[0,0,0.96])/0.2).sum()
+        trunk_velocity_error = np.abs((pose_vel)/0.2).sum()
+        trunk_orientation_error = np.abs((orientation-[np.pi,0,0])/0.5).sum()
+        leftfoot_position_error = np.abs((left_foot_pose-self.left_foot_initial_pose)/0.2).sum()         #left foot 0 pose  [-0.00880596,  0.2150994 ,  0.06848903]
+        leftfoot_velocity_error = np.abs(left_foot_vel[0:2]).sum()
+        rightfoot_position_error = np.abs((right_foot_pose-self.right_foot_initial_pose)/0.2).sum()       #right foot 0 pose [-0.01198452, -0.17144046,  0.0620562 ]
+        rightfoot_velocity_error = np.abs(right_foot_vel[0:2]).sum()
+        action_error = (scaled_action**2).sum()
+        velocity_error = np.abs(joint_velocitites).sum()
 
-        # positionx_reward = np.clip((1-np.abs((pose[0] - 0)/0.15))*3, a_min=0, a_max=3)
-        # positiony_reward = np.clip(1-np.abs((pose[1] - 0)/0.2), a_min=0, a_max=1)
-        # positionz_reward = np.clip(1-np.abs((pose[2] - 1)/0.5), a_min=0, a_max=1)
-        # position_reward = positionx_reward + positiony_reward + positionz_reward
-        # orientation_reward = np.clip((1-(np.sum(np.abs((orientation - [np.pi,0,0])))))*3, a_min=0, a_max=1)
-        # foot_reward = (1-np.abs(self.get_body_com("left-foot")[2]/.2)) + (1-np.abs(self.get_body_com("right-foot")[2]/.2))
+        trunk_position_reward = np.e**(-3*trunk_position_error)
+        trunk_orientation_reward = np.e**(-3*trunk_orientation_error)
+        trunk_velocity_reward = np.e**(-3*trunk_velocity_error)
+        leftfoot_position_reward = np.e**(-3*leftfoot_position_error)
+        leftfoot_velocity_reward = np.e**(-3*leftfoot_velocity_error)
+        rightfoot_position_reward = np.e**(-3*rightfoot_position_error)
+        rightfoot_velocity_reward = np.e**(-3*rightfoot_velocity_error)
+        action_reward = np.e**(-0.05*action_error)
+        velocity_reward = np.e**(-.002*velocity_error)
+
+        goal_reward = (trunk_position_reward + trunk_orientation_reward + trunk_velocity_reward)/3
+        command_reward = (action_reward + velocity_reward)/4
+        smooth_reward = (leftfoot_velocity_reward + rightfoot_velocity_reward)/2
 
 
-        position_error = np.abs((pose-[0,0,0.96])/0.2).sum()
-        orientation_error = np.abs((orientation-[np.pi,0,0])/1).sum()
-        leftfoot_error = np.abs((left_foot_pose-[0, 0.2, 0.04])/0.2).sum()         #left foot 0 pose  [-0.00880596,  0.2150994 ,  0.06848903]
-        rightfoot_error = np.abs((right_foot_pose-[0,-0.2, 0.04])/0.2).sum()       #right foot 0 pose [-0.01198452, -0.17144046,  0.0620562 ]
-
-        position_reward = np.e**(-3*position_error)
-        orientation_reward = np.e**(-3*orientation_error)
-        leftfoot_reward = np.e**(-3*leftfoot_error)
-        rightfoot_reward = np.e**(-3*rightfoot_error)
-
-        reward = position_reward + orientation_reward + leftfoot_reward + rightfoot_reward
+        reward = 1 + .4*goal_reward +.3*command_reward + .3*smooth_reward
+        # reward = 1 + .3*position_reward + .3*orientation_reward + .2*velocity_reward + .1*leftfoot_reward + .1*rightfoot_reward
         done = self.done
         observation = self._get_obs()
-        info = {}
+        info = {"terminal_observation": done}
         return observation, reward, done, info
 
 
@@ -154,6 +167,12 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         noise_low = -self._reset_noise_scale
         noise_high = self._reset_noise_scale
 
+        lx, ly, lz = self.get_body_com("left-foot")
+        rx, ry, rz = self.get_body_com("right-foot")
+
+        self.left_foot_initial_pose = np.array([lx,ly,0.04])
+        self.right_foot_initial_pose = np.array([rx,ry,0.04])
+
         # qpos = self.init_qpos + self.np_random.uniform(low=noise_low, high=noise_high, size=self.model.nq)
         zero_pose = np.asarray([  1.00000390e-04,  1.10453331e-05,  9.89611245e-01,  9.99999981e-01,
                             -1.50645122e-06, -1.93453798e-04, -1.53469430e-09,  6.83438358e-02,
@@ -164,7 +183,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                                 9.55578531e-01, -5.09970882e-02, -6.89472086e-03, -2.90209289e-01,
                             -1.37987225e+00,  3.22283929e-03,  1.59371522e+00,  6.91570380e-04,
                             -1.59253155e+00,  1.57410108e+00, -1.69989113e+00])
-        qpos = zero_pose + self.np_random.uniform(low=noise_low, high=noise_high, size=zero_pose.shape[0])
+        qpos = zero_pose #+ self.np_random.uniform(low=noise_low, high=noise_high, size=zero_pose.shape[0])
         qvel = self.init_qvel + self._reset_noise_scale * self.np_random.randn(self.model.nv)
         self.set_state(qpos, qvel)
 

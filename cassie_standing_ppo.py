@@ -22,24 +22,19 @@ if __name__ == '__main__':
     num_cpu = 8  # Number of processes to use
     # You can choose between `DummyVecEnv` (usually faster) and `SubprocVecEnv`
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=DummyVecEnv)
-    # Custom actor (pi) and value function (vf) networks
-    # of two layers of size 32 each with Relu activation function
-    policy_kwargs = dict(activation_fn=th.nn.ReLU, net_arch=[dict(pi=[512, 256], vf=[512, 256])])
-    model = PPO('MlpPolicy', env, gamma=0.997, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+    policy_kwargs = dict(
+                    log_std_init=-2,
+                    ortho_init=False,
+                    activation_fn=th.nn.ReLU, 
+                    net_arch=[dict(pi=[512, 256, 128], vf=[512, 256, 128])])
+
+    # TEST ent_coef=0.001
+    model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=8192, batch_size=32, n_epochs=5, clip_range=0.2, gamma=0.99, gae_lambda=0.95,
+    create_eval_env=True, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
 
     render_call = RenderCallback(render_freq=10000, env=eval_env)
 
     for i in range(int(1e6)):
         model.learn(total_timesteps=int(2e10), callback=render_call)
+        # model.learn(total_timesteps=int(2e10))
         model.save("cassie_standing{i}")
-
-
-        # for _ in range(3):
-        #     obs = eval_env.reset()
-        #     done= False
-        #     while done == False:
-        #         action, _states = model.predict(obs)
-        #         obs, reward, done, info = eval_env.step(action)
-        #         raw=eval_env.render(mode='rgb_array')
-        #         cv2.imshow("cassie_standing_model",raw)
-        #         cv2.waitKey(1)
