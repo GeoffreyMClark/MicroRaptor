@@ -26,11 +26,11 @@ if __name__ == '__main__':
                     log_std_init=-2,
                     ortho_init=False,
                     activation_fn=th.nn.ReLU, 
-                    net_arch=[dict(pi=[512, 256, 128], vf=[512, 256, 128])])
+                    net_arch=[dict(pi=[1024, 512], vf=[1024, 512])])
 
-    # TEST ent_coef=0.001
-    model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=8192, batch_size=32, n_epochs=5, clip_range=0.2, gamma=0.99, gae_lambda=0.95,
-    create_eval_env=True, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+    # TEST ent_coef=0.001 reward=-1 when done
+    model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=8192, batch_size=32, n_epochs=5, clip_range=0.2, gamma=0.998, gae_lambda=0.95, use_sde=False,
+    create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
 
     render_call = RenderCallback(render_freq=10000, env=eval_env)
 

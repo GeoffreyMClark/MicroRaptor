@@ -21,7 +21,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         contact_cost_weight=2e-1,
         healthy_reward=7.0,
         terminate_when_unhealthy=True,
-        healthy_z_range=(0.5, 1.5),
+        healthy_z_range=(0.5, 1.1),
         healthy_x_range=(-0.3, 0.3),
         healthy_foot_z=0.2,
         contact_force_range=(-1.0, 1.0),
@@ -52,6 +52,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.sensor_average=np.array([3.75,15,0,-100.5,-85,0,1.8,-1.5,3.75,15,0,-100.5,-85,0,1.8,-1.5,    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
         self.sensor_scale=np.array([18.75,22.5,65,63.5,55,.5,1.65,1.3,18.75,22.5,65,63.5,55,.5,1.65,1.3,  600,600,600,600,1500,25,40,25,600,600,600,600,1500,25,40,25])
         self.action_scale=np.array([4.5, 4.5, 12.2, 12.2, .9, 4.5, 4.5, 12.2, 12.2, .9])
+        # self.prior_scaled_action = np.array([0,0,0,0,0,0,0,0,0,0])
         
         mujoco_env.MujocoEnv.__init__(self, xml_file, 1)
 
@@ -92,8 +93,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         return done
 
     def step(self, action):
-        action = np.clip(action,-1, 1)
-        scaled_action = action*self.action_scale
+        scaled_action = np.tanh(action)*self.action_scale
 
         self.do_simulation(scaled_action, self.frame_skip)
         pose = self.get_body_com("cassie-pelvis")[:3].copy()
@@ -109,34 +109,38 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         
         # NEED TO ADD REWARD FOR VELOCITIES (JOINT)
         # NEED TO ADD REWARD FOR LOW JOINT TORQUES
-        trunk_position_error = np.abs((pose-[0,0,0.96])/0.2).sum()
-        trunk_velocity_error = np.abs((pose_vel)/0.2).sum()
-        trunk_orientation_error = np.abs((orientation-[np.pi,0,0])/0.5).sum()
+        trunk_position_error = np.abs((pose-[-.1,0.0,0.94])/[0.1, 0.2, 0.3]).sum()
+        trunk_stable_position_error = np.abs((pose[0:2]-[0,0])*3).sum()
+        trunk_velocity_error = np.abs((pose_vel[0:2])).sum()
+        trunk_orientation_error = np.abs((orientation-[np.pi,0,0])/0.6).sum()
         leftfoot_position_error = np.abs((left_foot_pose-self.left_foot_initial_pose)/0.2).sum()         #left foot 0 pose  [-0.00880596,  0.2150994 ,  0.06848903]
         leftfoot_velocity_error = np.abs(left_foot_vel[0:2]).sum()
         rightfoot_position_error = np.abs((right_foot_pose-self.right_foot_initial_pose)/0.2).sum()       #right foot 0 pose [-0.01198452, -0.17144046,  0.0620562 ]
         rightfoot_velocity_error = np.abs(right_foot_vel[0:2]).sum()
         action_error = (scaled_action**2).sum()
+        # action_diff_error = scaled_action - self.prior_scaled_action
         velocity_error = np.abs(joint_velocitites).sum()
+        done = self.done
 
         trunk_position_reward = np.e**(-3*trunk_position_error)
         trunk_orientation_reward = np.e**(-3*trunk_orientation_error)
-        trunk_velocity_reward = np.e**(-3*trunk_velocity_error)
+        trunk_velocity_reward = np.e**(-1*trunk_velocity_error)
         leftfoot_position_reward = np.e**(-3*leftfoot_position_error)
         leftfoot_velocity_reward = np.e**(-3*leftfoot_velocity_error)
         rightfoot_position_reward = np.e**(-3*rightfoot_position_error)
         rightfoot_velocity_reward = np.e**(-3*rightfoot_velocity_error)
         action_reward = np.e**(-0.05*action_error)
+        # action_diff_reward = np.e**(-0.05*action_diff_error)
         velocity_reward = np.e**(-.002*velocity_error)
+        survival_reward = 1 if done == False else -100
 
-        goal_reward = (trunk_position_reward + trunk_orientation_reward + trunk_velocity_reward)/3
-        command_reward = (action_reward + velocity_reward)/4
-        smooth_reward = (leftfoot_velocity_reward + rightfoot_velocity_reward)/2
+        goal_reward = .4*trunk_position_reward + .4*trunk_orientation_reward + .2*trunk_velocity_reward
+        command_reward = .2*action_reward  + .8*velocity_reward
+        foot_reward = .5*leftfoot_velocity_reward + .5*rightfoot_velocity_reward
 
-
-        reward = 1 + .4*goal_reward +.3*command_reward + .3*smooth_reward
-        # reward = 1 + .3*position_reward + .3*orientation_reward + .2*velocity_reward + .1*leftfoot_reward + .1*rightfoot_reward
-        done = self.done
+        reward = survival_reward + .7*goal_reward +.1*command_reward + .2*foot_reward
+        
+        # self.prior_scaled_action = scaled_action
         observation = self._get_obs()
         info = {"terminal_observation": done}
         return observation, reward, done, info
@@ -155,7 +159,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         sensors = sensordata[0:32]
 
-        norm_pose = pose-np.array([0,0,1])
+        norm_pose = pose-np.array([-.1,0.0,0.94])
         norm_orientation = (orientation-np.array([np.pi,0,0]))/np.pi
         norm_sensors = (sensors-self.sensor_average)/self.sensor_scale
 
