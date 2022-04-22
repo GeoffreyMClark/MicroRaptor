@@ -28,13 +28,12 @@ if __name__ == '__main__':
                     activation_fn=th.nn.ReLU, 
                     net_arch=[dict(pi=[1024, 512], vf=[1024, 512])])
 
-    # TEST ent_coef=0.001 reward=-1 when done
-    model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=8192, batch_size=32, n_epochs=5, clip_range=0.2, gamma=0.998, gae_lambda=0.95, use_sde=False,
-    create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+    # TEST batch_size=512-5120    n_epochs=10
+    model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=4096, batch_size=512, n_epochs=10, clip_range=0.2, gamma=0.998, gae_lambda=0.99, 
+    use_sde=False, ent_coef=0.0, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
 
     render_call = RenderCallback(render_freq=10000, env=eval_env)
 
-    for i in range(int(1e6)):
-        model.learn(total_timesteps=int(2e10), callback=render_call)
-        # model.learn(total_timesteps=int(2e10))
-        model.save("cassie_standing{i}")
+    model.learn(total_timesteps=int(2e15), callback=render_call)
+    # model.learn(total_timesteps=int(2e10))
+    model.save("cassie_standing{i}")

@@ -109,10 +109,10 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         
         # NEED TO ADD REWARD FOR VELOCITIES (JOINT)
         # NEED TO ADD REWARD FOR LOW JOINT TORQUES
-        trunk_position_error = np.abs((pose-[-.1,0.0,0.94])/[0.1, 0.2, 0.3]).sum()
+        trunk_position_error = np.abs((pose-[0.0,0.0,0.94])/[0.1, 0.2, 0.3]).sum()
         trunk_stable_position_error = np.abs((pose[0:2]-[0,0])*3).sum()
         trunk_velocity_error = np.abs((pose_vel[0:2])).sum()
-        trunk_orientation_error = np.abs((orientation-[np.pi,0,0])/0.6).sum()
+        trunk_orientation_error = np.abs((orientation-[np.pi,0,0])/0.5).sum()
         leftfoot_position_error = np.abs((left_foot_pose-self.left_foot_initial_pose)/0.2).sum()         #left foot 0 pose  [-0.00880596,  0.2150994 ,  0.06848903]
         leftfoot_velocity_error = np.abs(left_foot_vel[0:2]).sum()
         rightfoot_position_error = np.abs((right_foot_pose-self.right_foot_initial_pose)/0.2).sum()       #right foot 0 pose [-0.01198452, -0.17144046,  0.0620562 ]
@@ -159,7 +159,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         sensors = sensordata[0:32]
 
-        norm_pose = pose-np.array([-.1,0.0,0.94])
+        norm_pose = pose-np.array([0.0,0.0,0.94])
         norm_orientation = (orientation-np.array([np.pi,0,0]))/np.pi
         norm_sensors = (sensors-self.sensor_average)/self.sensor_scale
 
