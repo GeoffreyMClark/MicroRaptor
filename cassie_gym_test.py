@@ -17,7 +17,7 @@ for i in range(1000000000):
     cv2.imshow("camera 0", camera)
     cv2.waitKey(1)
 
-    print(obs[3:6])
+    # print(obs[3:6])
 
     goal_pose = np.asarray([3, 0, 10, -25, -85,  -3, 0, 10, -25, -85])
     actual_pose = np.asarray([obs[0],obs[1],obs[2],obs[3],obs[4],   obs[8],obs[9],obs[10],obs[11],obs[12]])
@@ -37,18 +37,17 @@ for i in range(1000000000):
 
     prev_pose = actual_pose
     obs, reward, done, info = env.step(action)
-    if i==10:
-        pass
 env.close()
 
 
-# Test tf-agents
-# env = CassieEnv()
-# env.reset()
-# action = env.action_space.sample()
-# print('Observation Spec:')
-# print(env.time_step_spec().observation)
-pass
+
+
+# BALL PHYSICS
+# ball mass = 0.1kg
+# ball velocity = 1 m/s - 20 m/s
+# contact time = 0.1 s
+# force = m * (vel/time)
+# 30 <= force <= 100 << 200
 
 
 

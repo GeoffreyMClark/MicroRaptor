@@ -25,15 +25,43 @@ if __name__ == '__main__':
     policy_kwargs = dict(
                     log_std_init=-2,
                     ortho_init=False,
-                    activation_fn=th.nn.ReLU, 
-                    net_arch=[dict(pi=[1024, 512], vf=[1024, 512])])
+                    activation_fn=th.nn.Tanh, 
+                    net_arch=[dict(pi=[128, 128],vf=[128, 128])])
 
-    # TEST batch_size=512-5120    n_epochs=10
-    model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=4096, batch_size=512, n_epochs=10, clip_range=0.2, gamma=0.998, gae_lambda=0.99, 
-    use_sde=False, ent_coef=0.0, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+    # PPO_10 - no perturbations | pi=[1024, 512],vf=[1024, 512] | failed_reward=-100.0
+    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=2048, batch_size=128, n_epochs=10, clip_range=0.2, gamma=0.998, gae_lambda=0.99, 
+    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
 
-    render_call = RenderCallback(render_freq=10000, env=eval_env)
+    # PPO_11 - no perturbations | pi=[1024, 512],vf=[1024, 512] | failed_reward=-100.0
+    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=2048, batch_size=128, n_epochs=10, clip_range=0.2, gamma=0.998, gae_lambda=0.95, 
+    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
 
-    model.learn(total_timesteps=int(2e15), callback=render_call)
-    # model.learn(total_timesteps=int(2e10))
-    model.save("cassie_standing{i}")
+    # PPO_12 - no perturbations | pi=[1024, 512],vf=[1024, 512] | failed_reward=-100.0
+    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=2048, batch_size=128, n_epochs=10, clip_range=0.2, gamma=0.998, gae_lambda=0.99, 
+    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+
+    # PPO_13 - 3-20 (2s) perturbations | pi=[1024, 512],vf=[1024, 512] | failed_reward=-100.0
+    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=2048, batch_size=128, n_epochs=10, clip_range=0.2, gamma=0.998, gae_lambda=0.98, 
+    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+
+    # PPO_14 - no perturbations | pi=[512, 256],vf=[512, 256] | failed_reward=-500.0
+    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=8192, batch_size=128, n_epochs=10, clip_range=0.2, gamma=0.998, gae_lambda=0.99, 
+    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+
+    # PPO_15 - same as 14 but added _adjust_circle function to quats and orientations
+    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=8192, batch_size=128, n_epochs=10, clip_range=0.2, gamma=0.998, gae_lambda=0.99, 
+    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+
+    # PPO_16 - no perturbations | pi=[128, 128],vf=[128, 128])] | failed_reward=-500.0 | max reward changed to 1 with no survival reward | activation_fn=th.nn.thanh
+    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=8192*2, batch_size=256, n_epochs=10, clip_range=0.25, gamma=0.998, gae_lambda=0.99, 
+    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+
+    # PPO_17 - no perturbations | pi=[128, 128],vf=[128, 128])] | failed_reward=-500.0 | max reward changed to 1 with no survival reward | activation_fn=th.nn.thanh
+    model = PPO('MlpPolicy', env, learning_rate=0.0002, n_steps=512, batch_size=256, n_epochs=10, clip_range=0.25, gamma=0.998, gae_lambda=0.9, 
+    use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+
+    # render_call = RenderCallback(render_freq=10000, env=eval_env)
+
+    for i in range(int(1e6)):
+        model.learn(total_timesteps=int(2e10), eval_env=eval_env, eval_freq=10000)   #, callback=render_call
+        model.save("cassie_standing{i}")
