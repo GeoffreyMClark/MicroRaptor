@@ -114,8 +114,8 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # elif 10 < self.perturb_flag:
         #     self.perturb_flag=0
         #     self.perturb_force = np.array([0.,0.,0.])
-        # if np.random.uniform(0,1) >= 0.9999 and self.perturb_flag==0:
-        #     force_p = np.random.uniform(3,20)
+        # if np.random.uniform(0,1) >= 0.999875 and self.perturb_flag==0:
+        #     force_p = np.random.uniform(3,4)
         #     r1, r2 = np.random.uniform(0,2*np.pi, 2)
         #     self.perturb_force[0] = force_p * np.sin(r2) * np.cos(r1)
         #     self.perturb_force[1] = force_p * np.sin(r2) * np.sin(r1)
@@ -163,9 +163,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # velocity_reward = np.e**(-.002*velocity_error)
 
 
-        # TO DO: check and replace goal_quat
-        # TO DO: figure out e1, e2 .... values
-        # TO DO: all accelleration term to R_smooth
+        # TO DO: add accelleration term to R_smooth
         e1=-30; e2=-30; e3=-15; e4=-3; e5=-.2; e6=-5; e7=-100
         goal_vel_x=0.; goal_vel_y=0.; goal_quat=[1.,0.,0.,0.]
         R_biped = np.e**(e1*np.abs(left_foot_vel).sum()) + np.e**(e1*np.abs(right_foot_vel).sum())
@@ -179,7 +177,7 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         else:
             survival_reward = self._healthy_reward
 
-        reward = survival_reward + 0.4*R_biped + 0.3*R_cmd + 0.1*R_smooth + 0.1*R_standing
+        reward = survival_reward + 0.5*R_biped + 0.333*R_cmd + 0.5*R_smooth + 0.5*R_standing
 
         self.prior_scaled_action = scaled_action
         observation = self._get_obs()

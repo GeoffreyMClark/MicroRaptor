@@ -60,17 +60,24 @@ if __name__ == '__main__':
     # model = PPO('MlpPolicy', env, learning_rate=0.0002, n_steps=512, batch_size=256, n_epochs=10, clip_range=0.25, gamma=0.998, gae_lambda=0.9, 
     # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
 
-    # PPO_new_4 - no perturbations | pi=[128,128],vf=[128, 128]] | failed_reward=-500.0/-1
-    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=512, batch_size=128, n_epochs=10, clip_range=0.25, gamma=0.999, gae_lambda=0.99, 
-    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
-
-    # PPO_new_5 - no perturbations | pi=[128,128],vf=[128, 128]] | failed_reward=-500.0/-1
+    # logs_new/PPO_1 - no perturbations | pi=[128,128],vf=[128, 128]] | failed_reward=-500.0/-1
     # dont remember exactly if relu or tanh was used and am 90% sure gae_lambda=0.90
-    model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=8192, batch_size=128, n_epochs=10, clip_range=0.2, gamma=0.999, gae_lambda=0.90, 
-    use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs/")
+    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=8192, batch_size=128, n_epochs=10, clip_range=0.2, gamma=0.999, gae_lambda=0.90, 
+    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs_new/")
+
+    # logs_new/PPO_2 - no perturbations | pi=[128,128],vf=[128, 128]] | failed_reward=-500.0/-1
+    # test if max number of timesteps is about double the n_steps number
+    # model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=512, batch_size=128, n_epochs=10, clip_range=0.2, gamma=0.999, gae_lambda=0.90, 
+    # use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs_new/")
+
+    # logs_new/PPO_3 - no perturbations | pi=[128,128],vf=[128, 128]] | failed_reward=-500.0/-1
+    # test increasing the batch size
+    model = PPO('MlpPolicy', env, learning_rate=0.0001, n_steps=16384, batch_size=512, n_epochs=10, clip_range=0.2, gamma=0.999, gae_lambda=0.90, 
+    use_sde=False, create_eval_env=False, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./logs_new/")
 
     render_call = RenderCallback(render_freq=10000, env=eval_env)
 
     for i in range(int(1e6)):
-        model.learn(total_timesteps=int(2e10), callback=render_call, eval_env=eval_env, eval_freq=10000)   #, callback=render_call
+        model.learn(total_timesteps=int(2e10), eval_env=eval_env, eval_freq=10000)   #, callback=render_call
         model.save("cassie_standing{i}")
+
