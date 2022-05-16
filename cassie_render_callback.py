@@ -30,8 +30,9 @@ class RenderCallback(BaseCallback):
                 obs = self.env.reset()
                 done= False
                 while done == False:
-                    action, _states = self.model.predict(obs)
+                    action, _states = self.model.predict(obs, deterministic=True)
                     obs, reward, done, info = self.env.step(action)
                     raw=self.env.render(mode='rgb_array')
-                    cv2.imshow("cassie_standing_model",raw)
+                    image = cv2.putText(raw.copy(), str(info['time_step']), (50,50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,255,255) )
+                    cv2.imshow("cassie_standing_model",image)
                     cv2.waitKey(1)

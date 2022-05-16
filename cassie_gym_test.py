@@ -32,7 +32,7 @@ for i in range(1000000000):
     t4 = np.sin(i/133)*10
     t5 = np.sin(i/142)*10
 
-    action = np.asarray([0,0,0,0,0,0,0,0,0,0])
+    action = np.asarray([10,10,10,10,10,10,10,10,10,10])
 
 
     prev_pose = actual_pose

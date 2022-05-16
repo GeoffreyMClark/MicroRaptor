@@ -2,7 +2,7 @@
 <mujoco model='cassie'>
   <compiler inertiafromgeom='auto' angle='degree' eulerseq='zyx' meshdir='cassie-stl-meshes'/>
   <size nuser_actuator='1' nuser_sensor='1' nuser_geom='1'/>
-  <option timestep='0.001' iterations='50' solver='PGS' gravity='0 0 -9.81'/>
+  <option timestep='0.001' iterations='20' solver='Newton' gravity='0 0 -9.81'/>
   <!-- Timestep is set to 0.0005 because our controller runs at 2 kHz -->
   <!-- Larger values still have stable dynamics -->
   <!-- total mass = 33.312 -->
@@ -157,7 +157,8 @@
                     <inertial pos='0.00474 0.02748 -0.00014' mass='0.1498' fullinertia='0.00017388 0.00016793 0.00033261 0.00011814 1.36e-06 -4e-07'/>
                     <joint name='left-foot' type='hinge' range='-140 -30' damping='1' armature='0.01225'/>
                     <geom type='mesh' mesh='left-foot' class='cassie2'/>
-                    <geom friction="2.0" type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-left'/>
+                    <!-- <geom friction="2.0" type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-left'/> -->
+                    <geom type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-left'/>
                   </body>
                 </body>
               </body>
@@ -220,7 +221,8 @@
                     <inertial pos='0.00474 0.02748 0.00014' mass='0.1498' fullinertia='0.00017388 0.00016793 0.00033261 0.00011814 -1.36e-06 4e-07'/>
                     <joint name='right-foot' type='hinge' range='-140 -30' damping='1' armature='0.01225'/>
                     <geom type='mesh' mesh='right-foot' class='cassie2'/>
-                    <geom friction="2.0" type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-right'/>
+                    <!-- <geom friction="2.0" type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-right'/> -->
+                    <geom type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-right'/>
                   </body>
                 </body>
               </body>
@@ -268,16 +270,16 @@
     <actuatorpos name='left-hip-pitch-input' actuator='left-hip-pitch' user='13'/>
     <actuatorpos name='left-knee-input'      actuator='left-knee'      user='13'/>
     <actuatorpos name='left-foot-input'      actuator='left-foot'      user='18'/>
-    <jointpos    name='left-shin-output'     joint='left-shin'         user='18' noise='2e-14'/>
-    <jointpos    name='left-tarsus-output'   joint='left-tarsus'       user='18' noise='2e-14'/>
+    <jointpos    name='left-shin-output'     joint='left-shin'         user='18'/>
+    <jointpos    name='left-tarsus-output'   joint='left-tarsus'       user='18'/>
     <jointpos    name='left-foot-output'     joint='left-foot'         user='13'/>
     <actuatorpos name='right-hip-roll-input'  actuator='right-hip-roll'   user='13'/>
     <actuatorpos name='right-hip-yaw-input'   actuator='right-hip-yaw'    user='13'/>
     <actuatorpos name='right-hip-pitch-input' actuator='right-hip-pitch'  user='13'/>
     <actuatorpos name='right-knee-input'      actuator='right-knee'       user='13'/>
     <actuatorpos name='right-foot-input'      actuator='right-foot'       user='18'/>
-    <jointpos    name='right-shin-output'     joint='right-shin'          user='18' noise='2e-14'/>
-    <jointpos    name='right-tarsus-output'   joint='right-tarsus'        user='18' noise='2e-14'/>
+    <jointpos    name='right-shin-output'     joint='right-shin'          user='18'/>
+    <jointpos    name='right-tarsus-output'   joint='right-tarsus'        user='18'/>
     <jointpos    name='right-foot-output'     joint='right-foot'          user='13'/>
 
     <actuatorvel name='left-hip-roll-input-vel'  actuator='left-hip-roll'   />
@@ -297,7 +299,7 @@
     <jointvel    name='right-tarsus-output-vel'   joint='right-tarsus'      />
     <jointvel    name='right-foot-output-vel'     joint='right-foot'        />
 
-    <!-- <actuatorfrc name='left-hip-roll-input-force'  actuator='left-hip-roll'   />
+    <actuatorfrc name='left-hip-roll-input-force'  actuator='left-hip-roll'   />
     <actuatorfrc name='left-hip-yaw-input-force'   actuator='left-hip-yaw'    />
     <actuatorfrc name='left-hip-pitch-input-force' actuator='left-hip-pitch'  />
     <actuatorfrc name='left-knee-input-force'      actuator='left-knee'       />
@@ -306,12 +308,15 @@
     <actuatorfrc name='right-hip-yaw-input-force'   actuator='right-hip-yaw'  />
     <actuatorfrc name='right-hip-pitch-input-force' actuator='right-hip-pitch'/>
     <actuatorfrc name='right-knee-input-force'      actuator='right-knee'     />
-    <actuatorfrc name='right-foot-input-force'      actuator='right-foot'     /> -->
+    <actuatorfrc name='right-foot-input-force'      actuator='right-foot'     />
 
     <!-- <framequat     name='pelvis-orientation' objtype='site' objname='imu'/>
     <gyro          name='pelvis-angular-velocity'    site='imu' noise='5e-4' cutoff='34.9'/>
     <accelerometer name='pelvis-linear-acceleration' site='imu' noise='1e-4' cutoff='157'/>
     <magnetometer  name='pelvis-magnetometer'        site='imu'/> -->
-  </sensor>
+  </sensor>f done == True:
+        #     survival_reward = self._failed_reward if np.abs(pose[0]) > 0.3 or np.abs(pose[1]) > 0.3 else self._failed_reward/2
+        # else:
+        #     survival_reward = self._healthy_reward
 
 </mujoco>

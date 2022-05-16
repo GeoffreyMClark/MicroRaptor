@@ -1,6 +1,7 @@
 from ntpath import join
 from random import uniform
 import numpy as np
+from scipy.stats import vonmises
 from gym import utils
 from gym.envs.mujoco import mujoco_env
 # from gym.envs.registration import register
@@ -21,15 +22,16 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         ctrl_cost_weight=0.05,
         contact_cost_weight=2e-1,
         healthy_reward=1.,
-        failed_reward=-1000.0,
+        failed_reward=-500.0,
         terminate_when_unhealthy=True,
-        healthy_z_range=(0.6, 1.05),
-        healthy_x_range=(-0.2, 0.2),
+        healthy_z_range=(0.75, 1.05),
+        healthy_x_range=(-0.2, 100),
+        healthy_y_range=(-0.2, 0.2),
         healthy_foot_z=0.2,
         healthy_orientation_range=1.25,
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=.05,
-        max_episode_steps=300000,
+        max_episode_steps=8192*1.5,
         exclude_current_IMU_from_observation=True,
     ):
         utils.EzPickle.__init__(**locals())
@@ -45,11 +47,29 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self._healthy_z_range = healthy_z_range
         self._healthy_foot_z = healthy_foot_z
         self._healthy_x_range = healthy_x_range
+        self._healthy_y_range = healthy_y_range
         self._healthy_orientation_range = healthy_orientation_range
         self.left_foot_initial_pose = np.array([0.,0.,0.])
         self.right_foot_initial_pose = np.array([0.,0.,0.])
         self.perturb_force = np.array([0.,0.,0.])
         self.perturb_flag=0
+        self.goal_velocity_min = 0
+        self.goal_velocity_max = 1.5
+        self.goal_velocity=0
+        self.phi=0
+        self.phi_dt=0.001
+        self.cycle1_stance=np.linspace(0,0.999,1000)
+        self.cycle1_swing=np.linspace(0,0.999,1000)
+        self.cycle2_stance=np.linspace(0,0.999,1000)
+        self.cycle2_swing=np.linspace(0,0.999,1000)
+        self.r=0.6
+        self.r_min=0.4
+        self.r_max=0.7
+        self.cycle_time=1.
+        self.cycle_time_min=0.7
+        self.cycle_time_max=1.4
+        self.stand_flag=0
+
 
         self._contact_force_range = contact_force_range
 
@@ -59,8 +79,8 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             exclude_current_IMU_from_observation
         )
 
-        self.sensor_average=np.array([3.75,15,0,-100.5,-85,0,1.8,-1.5,3.75,15,0,-100.5,-85,0,1.8,-1.5,    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
-        self.sensor_scale=np.array([18.75,22.5,65,63.5,55,.5,1.65,1.3,18.75,22.5,65,63.5,55,.5,1.65,1.3,  600,600,600,600,1500,25,40,25,600,600,600,600,1500,25,40,25])
+        self.sensor_average=np.array([3.75,15,0,-100.5,-85,0,1.8,-1.5,3.75,15,0,-100.5,-85,0,1.8,-1.5,    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,                                0,0,0,0,0,0,0,0,0,0])
+        self.sensor_scale=np.array([18.75,22.5,65,63.5,55,.5,1.65,1.3,18.75,22.5,65,63.5,55,.5,1.65,1.3,  600,600,600,600,1500,25,40,25,600,600,600,600,1500,25,40,25,    4.5, 4.5, 12.2, 12.2, .9, 4.5, 4.5, 12.2, 12.2, .9])
         self.action_scale=np.array([4.5, 4.5, 12.2, 12.2, .9, 4.5, 4.5, 12.2, 12.2, .9])
         self.prior_scaled_action = np.array([0,0,0,0,0,0,0,0,0,0])
         
@@ -95,9 +115,10 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         ori = self.euler_from_quaternion(quat)
         min_z, max_z = self._healthy_z_range
         min_x, max_x = self._healthy_x_range
+        min_y, max_y = self._healthy_y_range
         max_ori = self._healthy_orientation_range
         max_foot = self._healthy_foot_z
-        is_healthy = np.isfinite(state).all()  and  min_z<=state[2]<=max_z  and min_x<=state[0]<=max_x and min_x<=state[1]<=max_x   and  left_foot_z<=max_foot  and  right_foot_z<=max_foot   and -max_ori<=ori[0]-np.pi<=max_ori and -max_ori<=ori[1]<=max_ori and -max_ori<=ori[2]<=max_ori 
+        is_healthy = np.isfinite(state).all()  and  min_z<=state[2]<=max_z  and min_x<=state[0]<=max_x and min_y<=state[1]<=max_y   and -max_ori<=ori[0]-np.pi<=max_ori and -max_ori<=ori[1]<=max_ori and -max_ori<=ori[2]<=max_ori 
         return is_healthy
 
     @property
@@ -106,84 +127,77 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         return done
 
     def step(self, action):
+        # scale action space with tanh function
         scaled_action = np.tanh(action)*self.action_scale
 
-        # scaled_action = action
-        # if 0 < self.perturb_flag <= 100:
-        #     self.perturb_flag = self.perturb_flag + 1
-        # elif 10 < self.perturb_flag:
-        #     self.perturb_flag=0
-        #     self.perturb_force = np.array([0.,0.,0.])
-        # if np.random.uniform(0,1) >= 0.999875 and self.perturb_flag==0:
-        #     force_p = np.random.uniform(3,4)
-        #     r1, r2 = np.random.uniform(0,2*np.pi, 2)
-        #     self.perturb_force[0] = force_p * np.sin(r2) * np.cos(r1)
-        #     self.perturb_force[1] = force_p * np.sin(r2) * np.sin(r1)
-        #     self.perturb_force[2] = force_p * np.cos(r2)
-        #     self.perturb_flag = 1
-        # self.data.xfrc_applied[1] = np.array([self.perturb_force[0], self.perturb_force[1], self.perturb_force[2], 0., 0., 0.])
+        # Add perturbations with random direction
+        pert_t_steps=100; pert_min=0; pert_max=5; pert_prob=.0002
+        if 0 < self.perturb_flag <= pert_t_steps:
+            self.perturb_flag = self.perturb_flag + 1
+        elif self.perturb_flag > pert_t_steps:
+            self.perturb_flag=0
+            self.perturb_force = np.array([0.,0.,0.])
+        if np.random.uniform(0,1) <= pert_prob and self.perturb_flag==0:
+            force_p = np.random.uniform(pert_min,pert_max)
+            r1, r2 = np.random.uniform(0,2*np.pi, 2)
+            self.perturb_force[0] = force_p * np.sin(r2) * np.cos(r1)
+            self.perturb_force[1] = force_p * np.sin(r2) * np.sin(r1)
+            self.perturb_force[2] = force_p * np.cos(r2)
+            self.perturb_flag = 1
+        self.data.xfrc_applied[1] = np.array([self.perturb_force[0], self.perturb_force[1], self.perturb_force[2], 0., 0., 0.])
 
+        # Run simulation step
         self.do_simulation(scaled_action, self.frame_skip)
-        
+
+        # Get simulation states
         pose = self.get_body_com("cassie-pelvis")[:3].copy()
         trunk_vel = self.data.get_body_xvelp("cassie-pelvis")
         quat = self.data.get_body_xquat("cassie-pelvis")
-        quat_vel = self.data.get_body_xvelr("cassie-pelvis")
-        orientation = self.euler_from_quaternion(quat)
+        contact_force = self.contact_forces.flat.copy()
         left_foot_pose = self.get_body_com("left-foot")
         left_foot_vel = self.data.get_body_xvelp("left-foot")
         right_foot_pose = self.get_body_com("right-foot")
         right_foot_vel = self.data.get_body_xvelp("right-foot")
-        joint_velocitites = self.sim.data.sensordata.flat.copy()[16:32]
         action_diff = np.abs(scaled_action - self.prior_scaled_action).sum()
-        scaled_torque = np.abs(scaled_action).sum()
-        
-        # SCALED ACTION ERROR NEEDS ABS OR EVERYTHING WILL FAIL!!!
-        # trunk_position_error = np.abs((pose-[0.0,0.0,0.94])/[0.2, 0.3, 0.3]).sum()
-        # trunk_stable_position_error = np.abs((pose[0:2]-[0,0])*3).sum()
-        # trunk_velocity_error = np.abs((pose_vel[0:2])).sum()
-        # trunk_orientation_error = np.abs((orientation-[np.pi,0,0])/1).sum()
-        # leftfoot_position_error = np.abs((left_foot_pose-self.left_foot_initial_pose)/0.2).sum()         #left foot 0 pose  [-0.00880596,  0.2150994 ,  0.06848903]
-        # leftfoot_velocity_error = np.abs(left_foot_vel[0:2]).sum()
-        # rightfoot_position_error = np.abs((right_foot_pose-self.right_foot_initial_pose)/0.2).sum()       #right foot 0 pose [-0.01198452, -0.17144046,  0.0620562 ]
-        # rightfoot_velocity_error = np.abs(right_foot_vel[0:2]).sum()
-        # action_error = (scaled_action**2).sum()
-        # action_diff_error = scaled_action - self.prior_scaled_action
-        # velocity_error = np.abs(joint_velocitites).sum()
-        
-        # trunk_position_reward = np.e**(-3*trunk_position_error)
-        # trunk_orientation_reward = np.e**(-3*trunk_orientation_error)
-        # trunk_velocity_reward = np.e**(-1*trunk_velocity_error)
-        # leftfoot_position_reward = np.e**(-3*leftfoot_position_error)
-        # leftfoot_velocity_reward = np.e**(-3*leftfoot_velocity_error)
-        # rightfoot_position_reward = np.e**(-3*rightfoot_position_error)
-        # rightfoot_velocity_reward = np.e**(-3*rightfoot_velocity_error)
-        # action_reward = np.e**(-0.05*action_error)
-        # action_diff_reward = np.e**(-0.05*action_diff_error)
-        # velocity_reward = np.e**(-.002*velocity_error)
+        scaled_torque = np.abs(scaled_action).sum() 
 
+        # Create gait cycle 
+        phi_sel = int((self.phi%1)*(1/self.dt))
+        I1_stance = self.cycle1_stance[phi_sel]
+        I1_swing = self.cycle1_swing[phi_sel]
+        I2_stance = self.cycle2_stance[phi_sel]
+        I2_swing = self.cycle2_swing[phi_sel]
 
-        # TO DO: add accelleration term to R_smooth
-        e1=-30; e2=-30; e3=-15; e4=-3; e5=-.2; e6=-5; e7=-100
-        goal_vel_x=0.; goal_vel_y=0.; goal_quat=[1.,0.,0.,0.]
-        R_biped = np.e**(e1*np.abs(left_foot_vel).sum()) + np.e**(e1*np.abs(right_foot_vel).sum())
-        R_cmd = np.e**(e2*np.abs(trunk_vel[0]-goal_vel_x)) + np.e**(e2*np.abs(trunk_vel[1]-goal_vel_y)) + np.e**(e3*(1-np.dot(quat, goal_quat)**2))
-        R_smooth = np.e**(e4*action_diff) + np.e**(e5*scaled_torque) 
-        R_standing = np.e**(e6*(np.abs(left_foot_pose[0]-right_foot_pose[0])+np.abs(left_foot_pose[2]-right_foot_pose[2]))) + np.e**(e7*action_diff)
-
+        # Calculate survival reward
         done = self.done
         if done == True:
-            survival_reward = self._failed_reward if np.abs(pose[0]) > 0.3 or np.abs(pose[1]) > 0.3 else self._failed_reward/5
+            survival_reward = self._failed_reward if np.abs(pose[0]) > self._healthy_x_range[1] or np.abs(pose[1]) > self._healthy_x_range[1] else self._failed_reward/5
         else:
             survival_reward = self._healthy_reward
 
-        reward = survival_reward + 0.5*R_biped + 0.333*R_cmd + 0.5*R_smooth + 0.5*R_standing
-
-        self.prior_scaled_action = scaled_action
-        observation = self._get_obs()
+        # End simulation if max time steps has been reached with no negative reward
         done = True if self.num_steps >= self._max_episode_steps else done
+
+        # Calculate reward functions
+        e1=-30; e2=-25; e3=-15; e4=-3; e5=-.1; e6=-5; e7=-8; e8=-100
+        goal_vel_x=self.goal_velocity; goal_vel_y=0.; 
+        goal_quat=[1.,0.,0.,0.]
+        R_biped = I1_stance*np.e**(e1*np.abs(left_foot_vel).sum()) + I2_stance*np.e**(e1*np.abs(right_foot_vel).sum())
+        R_cmd = np.e**(e2*np.abs(trunk_vel[0]-goal_vel_x)) + np.e**(e2*np.abs(trunk_vel[1]-goal_vel_y)) + np.e**(e3*(1-np.dot(quat, goal_quat)**2))
+        R_smooth = np.e**(e4*action_diff) + np.e**(e5*scaled_torque) 
+        R_standing = np.e**(e6*(np.abs(left_foot_pose[0]-right_foot_pose[0])+np.abs(left_foot_pose[2]-right_foot_pose[2]))) + np.e**(e7*np.abs(.3836-(left_foot_pose[1]-right_foot_pose[1]))) + np.e**(e8*action_diff)  #
+        reward = survival_reward + 0.5*0.5*R_biped + 0.3*0.3333*R_cmd + 0.1*0.5*R_smooth + 0.1*0.3333*R_standing*self.stand_flag
+
+        # Save important parameters
+        self.prior_scaled_action = scaled_action
         self.num_steps=self.num_steps+1
-        info = {"terminal_observation": done}
+        self.phi = self.phi+self.phi_dt
+        self.phi = self.phi-1 if self.phi>=1 else self.phi
+
+        # Get observation and info then return
+        observation = self._get_obs()
+        info = {"terminal_observation": done,
+                "time_step": self.num_steps}
         return observation, reward, done, info
 
 
@@ -191,18 +205,30 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         pose = self.data.get_body_xpos("cassie-pelvis")
         pose_vel = self.data.get_body_xvelp("cassie-pelvis")
         quat = self.data.get_body_xquat("cassie-pelvis")
-        orientation = self.euler_from_quaternion(quat)
         orientation_vel = self.data.get_body_xvelr("cassie-pelvis")
         sensordata = self.sim.data.sensordata.flat.copy()
-        sensors = sensordata[0:32]
-        norm_pose = pose-np.array([0.0,0.0,0.94])
-        norm_orientation = (orientation-np.array([np.pi,0,0]))/np.pi
-        norm_quat = quat/np.pi
+        sensors = sensordata
+        norm_pose = pose[2]-np.array([0.94])
         norm_sensors = (sensors-self.sensor_average)/self.sensor_scale
-        observations = np.concatenate((norm_pose, pose_vel, norm_orientation, orientation_vel, norm_sensors))
+        control = np.concatenate((  np.array([np.sin(self.phi/self.cycle_time*2*np.pi)]), 
+                                    np.array([np.cos(self.phi/self.cycle_time*2*np.pi)]), 
+                                    np.array([self.cycle_time]),
+                                    np.array([self.goal_velocity]), 
+                                    np.array([self.r])))
+        print(control)
+        observations = np.concatenate((norm_pose, pose_vel, quat, orientation_vel, norm_sensors, control))
         return observations
 
+
     def reset_model(self):
+        self.goal_velocity = np.random.uniform(self.goal_velocity_min, self.goal_velocity_max)
+        self.goal_velocity = 0 if self.goal_velocity <= 0.1 else self.goal_velocity
+        self.stand_flag = 1 if self.goal_velocity==0 else 0
+        self.phi=0
+        self.r = np.random.uniform(self.r_min, self.r_max)
+        self.cycle1_stance, self.cycle1_swing, self.cycle2_stance, self.cycle2_swing = self.generate_cycles(self.r)
+        self.cycle_time=1#np.random.uniform()
+
         noise_low = -self._reset_noise_scale
         noise_high = self._reset_noise_scale
 
@@ -228,6 +254,29 @@ class CassieEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.num_steps=0
         observation = self._get_obs()
         return observation
+
+    def generate_cycles(self, r):
+        phi = np.linspace(0,1, 1000)
+        # r=.6; 
+        cycle_offset=.5
+        a=0; b=a+r; k=100
+        ca_right = -vonmises.pdf(phi, k, loc=a, scale=1/(2*np.pi))
+        cb_right = vonmises.pdf(phi, k, loc=b, scale=1/(2*np.pi))
+        c_sum_right = np.cumsum(ca_right+cb_right)
+        c_scale_right = -(c_sum_right.max()-c_sum_right.min())/2
+        c_final_right = ((c_sum_right/c_scale_right))/2
+        c_final_right = c_final_right-c_final_right.min()
+        ca_left = -vonmises.pdf(phi+cycle_offset, k, loc=a, scale=1/(2*np.pi))
+        cb_left = vonmises.pdf(phi+cycle_offset, k, loc=b, scale=1/(2*np.pi))
+        c_sum_left = np.cumsum(ca_left+cb_left)
+        c_scale_left = -(c_sum_left.max()-c_sum_left.min())/2
+        c_final_left = ((c_sum_left/c_scale_left))/2
+        c_final_left = c_final_left-c_final_left.min()
+        c_final_right_stance = c_final_right
+        c_final_right_swing  = (-(c_final_right-0.5))+0.5
+        c_final_left_stance = c_final_left
+        c_final_left_swing  = (-(c_final_left-0.5))+0.5
+        return c_final_right_stance, c_final_right_swing, c_final_left_stance, c_final_left_swing
 
     def viewer_setup(self):
         for key, value in DEFAULT_CAMERA_CONFIG.items():
